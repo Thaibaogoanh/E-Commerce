@@ -63,8 +63,7 @@ export class Employee {
   @JoinTable({
     name: 'employee_color_management',
     joinColumn: { name: 'employeeId', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'colorCode', referencedColumnName: 'colorCode' },
+    inverseJoinColumn: { name: 'colorCode', referencedColumnName: 'ColorCode' },
   })
   managedColors: ColorOption[];
 }
-

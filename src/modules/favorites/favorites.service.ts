@@ -5,7 +5,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { Favorite } from '../../entities/favorite.entity';
 import { Product } from '../../entities/product.entity';
 import { Design } from '../../entities/design.entity';
@@ -40,12 +40,19 @@ export class FavoritesService {
     }
 
     // Check if already favorited
+    const whereCondition: any = { userId };
+    if (favoriteData.productId) {
+      whereCondition.productId = favoriteData.productId;
+    } else {
+      whereCondition.productId = IsNull();
+    }
+    if (favoriteData.designId) {
+      whereCondition.designId = favoriteData.designId;
+    } else {
+      whereCondition.designId = IsNull();
+    }
     const existing = await this.favoriteRepository.findOne({
-      where: {
-        userId,
-        productId: favoriteData.productId || null,
-        designId: favoriteData.designId || null,
-      },
+      where: whereCondition,
     });
 
     if (existing) {
@@ -98,12 +105,19 @@ export class FavoritesService {
     userId: string,
     itemData: { productId?: string; designId?: string },
   ): Promise<void> {
+    const whereCondition: any = { userId };
+    if (itemData.productId) {
+      whereCondition.productId = itemData.productId;
+    } else {
+      whereCondition.productId = IsNull();
+    }
+    if (itemData.designId) {
+      whereCondition.designId = itemData.designId;
+    } else {
+      whereCondition.designId = IsNull();
+    }
     const favorite = await this.favoriteRepository.findOne({
-      where: {
-        userId,
-        productId: itemData.productId || null,
-        designId: itemData.designId || null,
-      },
+      where: whereCondition,
     });
 
     if (!favorite) {
@@ -117,12 +131,19 @@ export class FavoritesService {
     userId: string,
     itemData: { productId?: string; designId?: string },
   ): Promise<boolean> {
+    const whereCondition: any = { userId };
+    if (itemData.productId) {
+      whereCondition.productId = itemData.productId;
+    } else {
+      whereCondition.productId = IsNull();
+    }
+    if (itemData.designId) {
+      whereCondition.designId = itemData.designId;
+    } else {
+      whereCondition.designId = IsNull();
+    }
     const favorite = await this.favoriteRepository.findOne({
-      where: {
-        userId,
-        productId: itemData.productId || null,
-        designId: itemData.designId || null,
-      },
+      where: whereCondition,
     });
 
     return !!favorite;

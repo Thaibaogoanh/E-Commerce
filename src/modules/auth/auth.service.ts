@@ -41,7 +41,6 @@ export class AuthService {
       password,
       name,
       phone,
-      address,
       role: UserRole.USER,
     });
 
@@ -50,10 +49,20 @@ export class AuthService {
     // Generate JWT token
     const payload = {
       email: savedUser.email,
-      sub: savedUser.id,
+      sub: savedUser.UserID,
       role: savedUser.role,
     };
     const token = this.jwtService.sign(payload);
+
+    // Get user with addresses relation
+    const userWithAddresses = await this.userRepository.findOne({
+      where: { id: savedUser.id },
+      relations: ['addresses'],
+    });
+
+    // Get default address or first address
+    const defaultAddress = userWithAddresses?.addresses?.find(addr => addr.is_default) || userWithAddresses?.addresses?.[0];
+    const addressString = defaultAddress ? `${defaultAddress.line1}${defaultAddress.line2 ? ', ' + defaultAddress.line2 : ''}, ${defaultAddress.state} ${defaultAddress.zip}, ${defaultAddress.country}` : undefined;
 
     return {
       user: {
@@ -62,7 +71,7 @@ export class AuthService {
         email: savedUser.email,
         role: savedUser.role,
         phone: savedUser.phone,
-        address: savedUser.address,
+        address: addressString,
         image: savedUser.image,
         isActive: savedUser.isActive,
         createdAt: savedUser.createdAt,
@@ -77,7 +86,8 @@ export class AuthService {
 
     // Find user by email
     const user = await this.userRepository.findOne({
-      where: { email, isActive: true },
+      where: { email, is_active: true },
+      relations: ['addresses'],
     });
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -89,8 +99,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // Get default address or first address
+    const defaultAddress = user.addresses?.find(addr => addr.is_default) || user.addresses?.[0];
+    const addressString = defaultAddress ? `${defaultAddress.line1}${defaultAddress.line2 ? ', ' + defaultAddress.line2 : ''}, ${defaultAddress.state} ${defaultAddress.zip}, ${defaultAddress.country}` : undefined;
+
     // Generate JWT token
-    const payload = { email: user.email, sub: user.id, role: user.role };
+    const payload = { email: user.email, sub: user.UserID, role: user.role };
     const token = this.jwtService.sign(payload);
 
     return {
@@ -100,7 +114,7 @@ export class AuthService {
         email: user.email,
         role: user.role,
         phone: user.phone,
-        address: user.address,
+        address: addressString,
         image: user.image,
         isActive: user.isActive,
         createdAt: user.createdAt,
@@ -112,13 +126,13 @@ export class AuthService {
 
   async getProfile(userId: string): Promise<Partial<User>> {
     const user = await this.userRepository.findOne({
-      where: { id: userId, isActive: true },
+      where: { UserID: userId, is_active: true },
     });
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    const { password, ...userWithoutPassword } = user;
+    const { password_hash, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
 
@@ -127,7 +141,7 @@ export class AuthService {
     updateProfileDto: UpdateProfileDto,
   ): Promise<Partial<User>> {
     const user = await this.userRepository.findOne({
-      where: { id: userId, isActive: true },
+      where: { UserID: userId, is_active: true },
     });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -136,7 +150,7 @@ export class AuthService {
     Object.assign(user, updateProfileDto);
     const updatedUser = await this.userRepository.save(user);
 
-    const { password, ...userWithoutPassword } = updatedUser;
+    const { password_hash, ...userWithoutPassword } = updatedUser;
     return userWithoutPassword;
   }
 
@@ -147,7 +161,7 @@ export class AuthService {
     const { currentPassword, newPassword } = changePasswordDto;
 
     const user = await this.userRepository.findOne({
-      where: { id: userId, isActive: true },
+      where: { UserID: userId, is_active: true },
     });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -168,7 +182,7 @@ export class AuthService {
 
   async forgotPassword(email: string): Promise<{ message: string }> {
     const user = await this.userRepository.findOne({
-      where: { email, isActive: true },
+      where: { email, is_active: true },
     });
 
     if (!user) {

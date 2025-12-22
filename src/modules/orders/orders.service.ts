@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
@@ -10,6 +11,8 @@ import { Order, OrderStatus, PaymentStatus } from '../../entities/order.entity';
 import { OrderItem } from '../../entities/order-item.entity';
 import { Product } from '../../entities/product.entity';
 import { User } from '../../entities/user.entity';
+import { SkuVariant } from '../../entities/sku-variant.entity';
+import { Stock } from '../../entities/stock.entity';
 import {
   CreateOrderDto,
   UpdateOrderStatusDto,
@@ -18,9 +21,13 @@ import {
   OrderResponseDto,
   OrderStatsDto,
 } from '../../dto/order.dto';
+import { EmailService } from '../../services/email.service';
+import { InventoryService } from '../inventory/inventory.service';
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     @InjectRepository(Order)
     private orderRepository: Repository<Order>,
@@ -30,7 +37,13 @@ export class OrdersService {
     private productRepository: Repository<Product>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(SkuVariant)
+    private skuVariantRepository: Repository<SkuVariant>,
+    @InjectRepository(Stock)
+    private stockRepository: Repository<Stock>,
     private dataSource: DataSource,
+    private emailService: EmailService,
+    private inventoryService: InventoryService,
   ) {}
 
   async create(
@@ -41,7 +54,7 @@ export class OrdersService {
 
     // Verify user exists
     const user = await this.userRepository.findOne({
-      where: { id: userId, isActive: true },
+      where: { UserID: userId, is_active: true },
     });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -55,9 +68,16 @@ export class OrdersService {
       price: number;
       subtotal: number;
       product: Product;
+      skuVariant: SkuVariant | null;
+      skuId: string;
+      colorCode?: string;
+      sizeCode?: string;
+      designId?: string;
+      customDesignData?: any;
     }> = [];
 
     for (const item of items) {
+      // Validate product exists
       const product = await this.productRepository.findOne({
         where: { id: item.productId, isActive: true },
       });
@@ -68,10 +88,66 @@ export class OrdersService {
         );
       }
 
-      if (product.stock < item.quantity) {
-        throw new BadRequestException(
-          `Insufficient stock for product ${product.name}. Available: ${product.stock}`,
-        );
+      // Find SKU variant if color and size provided
+      let skuVariant: SkuVariant | null = null;
+      let skuId = item.productId; // Fallback to productId
+
+      if (item.colorCode && item.sizeCode) {
+        skuVariant = await this.skuVariantRepository.findOne({
+          where: {
+            productId: item.productId,
+            ColorCode: item.colorCode,
+            SizeCode: item.sizeCode,
+          },
+        });
+
+        if (skuVariant) {
+          skuId = skuVariant.SkuID;
+
+          // Check SKU variant stock (more accurate than product stock)
+          try {
+            const stock = await this.inventoryService.getBySku(skuId);
+            const availableStock =
+              stock.qty_on_hand - stock.qty_reserved;
+
+            if (availableStock < item.quantity) {
+              throw new BadRequestException(
+                `Insufficient stock for ${product.name} (${item.colorCode}, ${item.sizeCode}). Available: ${availableStock}, Requested: ${item.quantity}`,
+              );
+            }
+          } catch (error: any) {
+            // If stock not found, fallback to product stock check
+            if (error instanceof NotFoundException) {
+              this.logger.warn(
+                `Stock not found for SKU ${skuId}, falling back to product stock check`,
+              );
+              if (product.stock < item.quantity) {
+                throw new BadRequestException(
+                  `Insufficient stock for product ${product.name}. Available: ${product.stock}`,
+                );
+              }
+            } else {
+              throw error;
+            }
+          }
+        } else {
+          // SKU variant not found, check product stock
+          this.logger.warn(
+            `SKU variant not found for product ${item.productId} with color ${item.colorCode} and size ${item.sizeCode}`,
+          );
+          if (product.stock < item.quantity) {
+            throw new BadRequestException(
+              `Insufficient stock for product ${product.name}. Available: ${product.stock}`,
+            );
+          }
+        }
+      } else {
+        // No color/size specified, check product stock
+        if (product.stock < item.quantity) {
+          throw new BadRequestException(
+            `Insufficient stock for product ${product.name}. Available: ${product.stock}`,
+          );
+        }
       }
 
       const subtotal = item.price * item.quantity;
@@ -83,6 +159,12 @@ export class OrdersService {
         price: item.price,
         subtotal,
         product,
+        skuVariant,
+        skuId,
+        colorCode: item.colorCode,
+        sizeCode: item.sizeCode,
+        designId: item.designId,
+        customDesignData: item.customDesignData,
       });
     }
 
@@ -105,16 +187,20 @@ export class OrdersService {
 
       const savedOrder = await queryRunner.manager.save(Order, order);
 
-      // Create order items and update product stock
+      // Create order items and reserve stock
       const orderItems: OrderItem[] = [];
       for (const item of validatedItems) {
         const orderItem = this.orderItemRepository.create({
           orderId: savedOrder.id,
           productId: item.productId,
-          quantity: item.quantity,
-          price: item.price,
-          subtotal: item.subtotal,
-        });
+          qty: item.quantity,
+          unit_price: item.price,
+          colorCode: item.colorCode || null,
+          sizeCode: item.sizeCode || null,
+          designId: item.designId || null,
+          customDesignData: item.customDesignData || null,
+          skuId: item.skuId,
+        } as Partial<OrderItem>);
 
         const savedOrderItem = await queryRunner.manager.save(
           OrderItem,
@@ -122,15 +208,79 @@ export class OrdersService {
         );
         orderItems.push(savedOrderItem);
 
-        // Update product stock
-        item.product.stock -= item.quantity;
-        await queryRunner.manager.save(Product, item.product);
+        // Reserve stock for SKU variant (if exists) or update product stock
+        if (item.skuVariant && item.skuId !== item.productId) {
+          try {
+            // Reserve stock using InventoryService
+            await this.inventoryService.reserve(
+              item.skuId,
+              item.quantity,
+              `Order ${savedOrder.id}`,
+              'order',
+              savedOrder.id,
+            );
+            this.logger.log(
+              `Reserved ${item.quantity} units of SKU ${item.skuId} for order ${savedOrder.id}`,
+            );
+          } catch (error: any) {
+            this.logger.error(
+              `Failed to reserve stock for SKU ${item.skuId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
+            // Fallback to product stock update
+            item.product.stock -= item.quantity;
+            await queryRunner.manager.save(Product, item.product);
+          }
+        } else {
+          // Update product stock directly (fallback)
+          item.product.stock -= item.quantity;
+          await queryRunner.manager.save(Product, item.product);
+        }
       }
 
       await queryRunner.commitTransaction();
 
-      // Return formatted response
-      return this.formatOrderResponse(savedOrder);
+      // Get user email for order confirmation
+      const userEmail = user.email;
+      const orderResponse = this.formatOrderResponse(savedOrder);
+
+      // Prepare order items with product info for email
+      const orderItemsForEmail = await Promise.all(
+        orderItems.map(async (oi) => {
+          const product = await this.productRepository.findOne({
+            where: { id: oi.productId },
+          });
+          return {
+            product: {
+              name: product?.name || 'Sản phẩm',
+              id: product?.id,
+            },
+            quantity: oi.qty,
+            price: oi.unit_price,
+            colorCode: oi.colorCode,
+            sizeCode: oi.sizeCode,
+          };
+        }),
+      );
+
+      // Send order confirmation email (non-blocking)
+      this.emailService
+        .sendOrderConfirmation(userEmail, {
+          id: savedOrder.id,
+          orderId: savedOrder.id,
+          totalAmount: savedOrder.totalAmount,
+          total: savedOrder.totalAmount,
+          items: orderItemsForEmail,
+          shippingAddress: savedOrder.shippingAddress,
+          paymentMethod: savedOrder.paymentMethod,
+        })
+        .catch((error) => {
+          this.logger.error(
+            `Failed to send order confirmation email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+          // Don't throw - email is not critical
+        });
+
+      return orderResponse;
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;

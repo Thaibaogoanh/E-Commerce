@@ -40,6 +40,13 @@ export class DesignsController {
     });
   }
 
+  @Get('trending')
+  async getTrending(
+    @Query('limit') limit?: number,
+  ): Promise<{ designs: Design[]; total: number }> {
+    return this.designsService.findTrending(limit);
+  }
+
   @Get(':id')
   async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Design> {
     return this.designsService.findOne(id);
@@ -72,21 +79,12 @@ export class DesignsController {
     return this.designsService.reject(id);
   }
 
-  @Get('trending')
-  async getTrending(
-    @Query('limit') limit?: number,
-  ): Promise<{ designs: Design[]; total: number }> {
-    return this.designsService.findTrending(limit);
-  }
-
   @Post(':id/like')
   @UseGuards(JwtAuthGuard)
-  async likeDesign(
-    @Request() req,
+  likeDesign(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<{ message: string; liked: boolean }> {
     // This will be handled by FavoritesController
-    return { message: 'Use POST /api/favorites with designId', liked: false };
+    return Promise.resolve({ message: 'Use POST /api/favorites with designId', liked: false });
   }
 }
-

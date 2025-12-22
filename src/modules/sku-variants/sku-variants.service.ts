@@ -111,7 +111,10 @@ export class SkuVariantsService {
     return this.findOne(savedSku.SkuID);
   }
 
-  async update(skuId: string, updateData: Partial<SkuVariant>): Promise<SkuVariant> {
+  async update(
+    skuId: string,
+    updateData: Partial<SkuVariant>,
+  ): Promise<SkuVariant> {
     const sku = await this.findOne(skuId);
     Object.assign(sku, updateData);
     return this.skuVariantRepository.save(sku);
@@ -119,7 +122,7 @@ export class SkuVariantsService {
 
   async remove(skuId: string): Promise<void> {
     const sku = await this.findOne(skuId);
-    
+
     // Remove associated stock
     const stock = await this.stockRepository.findOne({
       where: { skuId: sku.SkuID },
@@ -131,4 +134,3 @@ export class SkuVariantsService {
     await this.skuVariantRepository.remove(sku);
   }
 }
-

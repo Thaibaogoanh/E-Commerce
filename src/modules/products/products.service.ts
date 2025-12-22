@@ -122,8 +122,10 @@ export class ProductsService {
       );
     }
 
-    // Apply sorting
-    queryBuilder.orderBy(`product.${sortBy}`, sortOrder);
+    // Apply sorting with validation
+    const validSortColumns = ['createdAt', 'price', 'rating', 'name'];
+    const safeSortBy = validSortColumns.includes(sortBy) ? sortBy : 'createdAt';
+    queryBuilder.orderBy(`product.${safeSortBy}`, sortOrder);
 
     // Apply pagination
     const offset = (page - 1) * limit;

@@ -39,6 +39,29 @@ export class CartItem {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   unit_price_snapshot: number; // Price at time of adding to cart
 
+  @Column({ type: 'jsonb', nullable: true })
+  customDesignData?: {
+    elements: Array<{
+      id: string;
+      type: 'text' | 'image' | 'design';
+      content: string;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      rotation: number;
+      fontSize?: number;
+      fontFamily?: string;
+      color?: string;
+      textAlign?: string;
+    }>;
+    color: string;
+    size: string;
+  };
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  sizeCode: string; // Size for custom design
+
   @CreateDateColumn()
   createdAt: Date;
 

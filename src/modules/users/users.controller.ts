@@ -17,11 +17,11 @@ import { AdminGuard } from '../../guards/admin.guard';
 import {
   CreateUserDto,
   UpdateUserDto,
-  ChangePasswordDto,
   UserQueryDto,
   UserResponseDto,
   UserStatsDto,
 } from '../../dto/user.dto';
+import { ChangePasswordDto } from '../../dto/auth.dto';
 
 @Controller('users')
 export class UsersController {

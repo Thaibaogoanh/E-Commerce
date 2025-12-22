@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      line-height: 1.6; 
+      color: #333; 
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+    .container { 
+      max-width: 600px; 
+      margin: 0 auto; 
+      padding: 20px; 
+      background-color: #ffffff;
+    }
+    .header { 
+      background: #ca6946; 
+      color: white; 
+      padding: 20px; 
+      text-align: center; 
+      border-radius: 5px 5px 0 0; 
+    }
+    .content { 
+      background: #f9f9f9; 
+      padding: 20px; 
+      border-radius: 0 0 5px 5px; 
+    }
+    .order-info { 
+      background: white; 
+      padding: 15px; 
+      margin: 15px 0; 
+      border-radius: 5px; 
+    }
+    .item { 
+      padding: 10px; 
+      border-bottom: 1px solid #eee; 
+    }
+    .item:last-child {
+      border-bottom: none;
+    }
+    .total { 
+      font-size: 18px; 
+      font-weight: bold; 
+      color: #ca6946; 
+      margin-top: 15px; 
+      padding-top: 15px;
+      border-top: 2px solid #eee;
+    }
+    .footer { 
+      text-align: center; 
+      margin-top: 20px; 
+      color: #666; 
+      font-size: 12px; 
+    }
+    h1 {
+      margin: 0;
+    }
+    h3 {
+      margin-top: 0;
+      color: #ca6946;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Xác nhận đơn hàng</h1>
+    </div>
+    <div class="content">
+      <p>Xin chào,</p>
+      <p>Cảm ơn bạn đã đặt hàng tại Sustainique!</p>
+      
+      <div class="order-info">
+        <h3>Thông tin đơn hàng</h3>
+        <p><strong>Mã đơn hàng:</strong> #{{orderId}}</p>
+        <p><strong>Ngày đặt:</strong> {{orderDate}}</p>
+        <p><strong>Địa chỉ giao hàng:</strong> {{shippingAddress}}</p>
+        <p><strong>Phương thức thanh toán:</strong> {{paymentMethod}}</p>
+      </div>
+
+      <div class="order-info">
+        <h3>Chi tiết sản phẩm</h3>
+        {{#each items}}
+        <div class="item">
+          <p><strong>{{index}}. {{productName}}</strong></p>
+          <p>Số lượng: {{quantity}}</p>
+          <p>Giá: {{price}}₫</p>
+          {{#if colorCode}}<p>Màu: {{colorCode}}</p>{{/if}}
+          {{#if sizeCode}}<p>Kích thước: {{sizeCode}}</p>{{/if}}
+        </div>
+        {{/each}}
+        <div class="total">
+          <p>Tổng cộng: {{totalAmount}}₫</p>
+        </div>
+      </div>
+
+      <p>Chúng tôi sẽ thông báo cho bạn ngay khi đơn hàng được gửi đi.</p>
+      <p>Trân trọng,<br/><strong>Đội ngũ Sustainique</strong></p>
+    </div>
+    <div class="footer">
+      <p>Email này được gửi tự động, vui lòng không trả lời.</p>
+      <p>&copy; {{currentYear}} Sustainique. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+

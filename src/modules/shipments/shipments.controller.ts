@@ -11,6 +11,7 @@ import {
 import { ShipmentsService } from './shipments.service';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { TrackEvent } from '../../entities/track-event.entity';
+import { ShipmentItem } from '../../entities/shipment-item.entity';
 
 @Controller('shipments')
 @UseGuards(JwtAuthGuard)
@@ -26,10 +27,7 @@ export class ShipmentsController {
   }
 
   @Get(':id/tracking')
-  async getTracking(
-    @Request() req,
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
+  async getTracking(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
     return this.shipmentsService.getTracking(id);
   }
 
@@ -41,5 +39,13 @@ export class ShipmentsController {
   ): Promise<TrackEvent> {
     return this.shipmentsService.addTrackingEvent(id, eventData);
   }
-}
 
+  @Post(':id/items')
+  async addShipmentItems(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body()
+    items: { orderItemId: string; quantity: number }[],
+  ): Promise<ShipmentItem[]> {
+    return this.shipmentsService.addShipmentItems(id, items);
+  }
+}

@@ -8,48 +8,50 @@ import {
   UseGuards,
   Request,
   ParseUUIDPipe,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { CustomizerService } from './customizer.service';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { SavedDesign } from '../../entities/saved-design.entity';
+import { SaveDesignDto, CalculatePriceDto } from '../../dto/customizer.dto';
 
 @Controller('customizer')
-@UseGuards(JwtAuthGuard)
 export class CustomizerController {
   constructor(private readonly customizerService: CustomizerService) {}
 
   @Post('save')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.CREATED)
   async saveDesign(
-    @Request() req,
-    @Body() designData: {
-      productId: string;
-      name: string;
-      canvasData: any;
-      colorCode: string;
-      sizeCode: string;
-      quantity: number;
-      designId?: string;
-    },
+    @Request() req: { user: { id: string } },
+    @Body() designData: SaveDesignDto,
   ): Promise<SavedDesign> {
     return this.customizerService.saveDesign(req.user.id, designData);
   }
 
   @Get('saved')
-  async getSavedDesigns(@Request() req): Promise<SavedDesign[]> {
+  @UseGuards(JwtAuthGuard)
+  async getSavedDesigns(
+    @Request() req: { user: { id: string } },
+  ): Promise<SavedDesign[]> {
     return this.customizerService.getSavedDesigns(req.user.id);
   }
 
   @Get('saved/:id')
+  @UseGuards(JwtAuthGuard)
   async getSavedDesign(
-    @Request() req,
+    @Request() req: { user: { id: string } },
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<SavedDesign> {
     return this.customizerService.getSavedDesign(req.user.id, id);
   }
 
   @Delete('saved/:id')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
   async deleteSavedDesign(
-    @Request() req,
+    @Request() req: { user: { id: string } },
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<{ message: string }> {
     await this.customizerService.deleteSavedDesign(req.user.id, id);
@@ -57,18 +59,11 @@ export class CustomizerController {
   }
 
   @Post('calculate-price')
+  @HttpCode(HttpStatus.OK)
   async calculatePrice(
-    @Body() designData: {
-      productId: string;
-      colorCode: string;
-      sizeCode: string;
-      quantity: number;
-      canvasData: any;
-      designId?: string;
-    },
+    @Body() designData: CalculatePriceDto,
   ): Promise<{ price: number }> {
     const price = await this.customizerService.calculatePrice(designData);
     return { price };
   }
 }
-

@@ -72,16 +72,8 @@ export class CartController {
   async applyVoucher(
     @Request() req,
     @Body() body: { voucherCode: string },
-  ): Promise<{ message: string; discount?: number }> {
-    // TODO: Implement voucher validation logic
-    // For now, return a mock response
-    if (body.voucherCode.toUpperCase() === 'GREEN20') {
-      return {
-        message: 'Voucher applied successfully',
-        discount: 0.2, // 20% discount
-      };
-    }
-    throw new Error('Invalid voucher code');
+  ): Promise<{ message: string; discount?: number; discountAmount?: number }> {
+    return this.cartService.applyVoucher(req.user.id, body.voucherCode);
   }
 }
 

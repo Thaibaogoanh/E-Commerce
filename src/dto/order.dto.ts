@@ -23,6 +23,38 @@ export class CreateOrderItemDto {
   @IsNumber()
   @Min(0)
   price: number;
+
+  @IsOptional()
+  @IsString()
+  colorCode?: string;
+
+  @IsOptional()
+  @IsString()
+  sizeCode?: string;
+
+  @IsOptional()
+  @IsUUID()
+  designId?: string;
+
+  @IsOptional()
+  customDesignData?: {
+    elements: Array<{
+      id: string;
+      type: 'text' | 'image' | 'design';
+      content: string;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      rotation: number;
+      fontSize?: number;
+      fontFamily?: string;
+      color?: string;
+      textAlign?: string;
+    }>;
+    color: string;
+    size: string;
+  };
 }
 
 export class CreateOrderDto {

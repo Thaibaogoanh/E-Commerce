@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { HealthController } from './health.controller';
 import { AuthModule } from './modules/auth/auth.module';
 import { ProductsModule } from './modules/products/products.module';
 import { CategoriesModule } from './modules/categories/categories.module';
@@ -19,6 +20,7 @@ import { CustomizerModule } from './modules/customizer/customizer.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
 import { RewardsModule } from './modules/rewards/rewards.module';
 import { VouchersModule } from './modules/vouchers/vouchers.module';
+import { ContactModule } from './modules/contact/contact.module';
 import { Neo4jService } from './config/neo4j.config';
 import { getDatabaseConfig } from './config/database.config';
 import { User } from './entities/user.entity';
@@ -37,6 +39,8 @@ import { Size } from './entities/size.entity';
 import { ColorOption } from './entities/color-option.entity';
 import { SkuVariant } from './entities/sku-variant.entity';
 import { Stock } from './entities/stock.entity';
+import { StockMovement } from './entities/stock-movement.entity';
+import { ShipmentItem } from './entities/shipment-item.entity';
 import { Design } from './entities/design.entity';
 import { DesignAsset } from './entities/design-asset.entity';
 import { DesignPlacement } from './entities/design-placement.entity';
@@ -54,6 +58,18 @@ import { Voucher } from './entities/voucher.entity';
 import { UserVoucher } from './entities/user-voucher.entity';
 import { RewardPoint } from './entities/reward-point.entity';
 import { RewardCatalog } from './entities/reward-catalog.entity';
+import { Contact } from './entities/contact.entity';
+import { InventoryModule } from './modules/inventory/inventory.module';
+import { PackagingModule } from './modules/packaging/packaging.module';
+import { SizesModule } from './modules/catalogs/sizes.module';
+import { MaterialsModule } from './modules/catalogs/materials.module';
+import { PrintMethodsModule } from './modules/catalogs/print-methods.module';
+import { ReturnReasonsModule } from './modules/return-reasons/return-reasons.module';
+import { EmployeesModule } from './modules/employees/employees.module';
+import { Asset } from './entities/asset.entity';
+import { AssetDisposal } from './entities/asset-disposal.entity';
+import { AssetsModule } from './modules/assets/assets.module';
+import { EmailService } from './services/email.service';
 
 @Module({
   imports: [
@@ -84,6 +100,10 @@ import { RewardCatalog } from './entities/reward-catalog.entity';
       ColorOption,
       SkuVariant,
       Stock,
+      StockMovement,
+      ShipmentItem,
+      Asset,
+      AssetDisposal,
       Design,
       DesignAsset,
       DesignPlacement,
@@ -101,6 +121,7 @@ import { RewardCatalog } from './entities/reward-catalog.entity';
       UserVoucher,
       RewardPoint,
       RewardCatalog,
+      Contact,
     ]),
     AuthModule,
     ProductsModule,
@@ -118,8 +139,17 @@ import { RewardCatalog } from './entities/reward-catalog.entity';
     FavoritesModule,
     RewardsModule,
     VouchersModule,
+    ContactModule,
+    InventoryModule,
+    PackagingModule,
+    SizesModule,
+    MaterialsModule,
+    PrintMethodsModule,
+    ReturnReasonsModule,
+    EmployeesModule,
+    AssetsModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, HealthController],
   providers: [AppService, Neo4jService],
 })
 export class AppModule {}

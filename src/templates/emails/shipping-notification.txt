@@ -1,0 +1,15 @@
+Đơn hàng đã được gửi đi
+
+Xin chào,
+
+Đơn hàng #{{orderId}} của bạn đã được gửi đi!
+
+Thông tin vận chuyển:
+- Mã vận đơn: {{trackingNumber}}
+- Đơn vị vận chuyển: {{carrier}}
+
+Bạn có thể theo dõi đơn hàng của mình bằng mã vận đơn trên.
+
+Trân trọng,
+Đội ngũ Sustainique
+

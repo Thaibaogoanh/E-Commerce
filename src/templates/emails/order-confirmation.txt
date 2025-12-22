@@ -1,0 +1,23 @@
+Xác nhận đơn hàng
+
+Xin chào,
+
+Cảm ơn bạn đã đặt hàng tại Sustainique!
+
+Thông tin đơn hàng:
+- Mã đơn hàng: #{{orderId}}
+- Ngày đặt: {{orderDate}}
+- Địa chỉ giao hàng: {{shippingAddress}}
+- Phương thức thanh toán: {{paymentMethod}}
+- Tổng cộng: {{totalAmount}}₫
+
+Chi tiết sản phẩm:
+{{#each items}}
+{{index}}. {{productName}} - Số lượng: {{quantity}} - Giá: {{price}}₫
+{{/each}}
+
+Chúng tôi sẽ thông báo cho bạn ngay khi đơn hàng được gửi đi.
+
+Trân trọng,
+Đội ngũ Sustainique
+

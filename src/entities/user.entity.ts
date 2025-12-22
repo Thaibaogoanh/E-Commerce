@@ -6,6 +6,8 @@ import {
   UpdateDateColumn,
   OneToMany,
   OneToOne,
+  ManyToOne,
+  JoinColumn,
   BeforeInsert,
   BeforeUpdate,
 } from 'typeorm';
@@ -16,6 +18,10 @@ import { Review } from './review.entity';
 import { Cart } from './cart.entity';
 import { SavedDesign } from './saved-design.entity';
 import { Favorite } from './favorite.entity';
+import { Asset } from './asset.entity';
+import { Address } from './address.entity';
+import { PaymentMethod } from './payment-method.entity';
+import { InvitationCode } from './invitation-code.entity';
 
 export enum UserRole {
   USER = 'user',
@@ -57,7 +63,7 @@ export class User {
   is_active: boolean;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
-  invitationCode: string; // Code used to invite this user
+  invitationCodeString: string; // Code used to invite this user
 
   @Column({ type: 'uuid', nullable: true })
   invitedById: string; // User who invited this user
@@ -87,7 +93,10 @@ export class User {
   @OneToOne(() => InvitationCode, (invitationCode) => invitationCode.owner)
   invitationCode: InvitationCode;
 
-  @ManyToOne(() => InvitationCode, (invitationCode) => invitationCode.invitedUsers)
+  @ManyToOne(
+    () => InvitationCode,
+    (invitationCode) => invitationCode.invitedUsers,
+  )
   @JoinColumn({ name: 'invitedById' })
   invitedBy: InvitationCode;
 
@@ -96,6 +105,9 @@ export class User {
 
   @OneToMany(() => Favorite, (favorite) => favorite.user)
   favorites: Favorite[];
+
+  @OneToMany(() => Asset, (asset) => asset.uploader)
+  assets: Asset[];
 
   // Methods
   @BeforeInsert()

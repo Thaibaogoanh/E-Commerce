@@ -17,6 +17,38 @@ export class AddToCartDto {
   @IsNumber()
   @Min(1)
   quantity: number;
+
+  @IsOptional()
+  @IsString()
+  colorCode?: string;
+
+  @IsOptional()
+  @IsString()
+  sizeCode?: string;
+
+  @IsOptional()
+  customDesignData?: {
+    elements: Array<{
+      id: string;
+      type: 'text' | 'image' | 'design';
+      content: string;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      rotation: number;
+      fontSize?: number;
+      fontFamily?: string;
+      color?: string;
+      textAlign?: string;
+    }>;
+    color: string;
+    size: string;
+  };
+
+  @IsOptional()
+  @IsUUID()
+  designId?: string; // If using existing design from gallery
 }
 
 export class UpdateCartItemDto {
@@ -31,6 +63,27 @@ export class CartItemResponseDto {
   quantity: number;
   price: number;
   subtotal: number;
+  sizeCode?: string;
+  colorCode?: string;
+  designId?: string;
+  customDesignData?: {
+    elements: Array<{
+      id: string;
+      type: 'text' | 'image' | 'design';
+      content: string;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      rotation: number;
+      fontSize?: number;
+      fontFamily?: string;
+      color?: string;
+      textAlign?: string;
+    }>;
+    color: string;
+    size: string;
+  };
   product: {
     id: string;
     name: string;

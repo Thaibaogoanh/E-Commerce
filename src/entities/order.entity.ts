@@ -33,7 +33,7 @@ export enum PaymentStatus {
 
 @Entity('orders')
 @Index(['userId'])
-@Index(['status'])
+@Index(['Status'])
 @Index(['paymentStatus'])
 export class Order {
   @PrimaryGeneratedColumn('uuid')
@@ -123,7 +123,7 @@ export class Order {
     this.Total = value;
   }
 
-  get createdAt(): Date {
+  get orderDate(): Date {
     return this.Order_date;
   }
 }

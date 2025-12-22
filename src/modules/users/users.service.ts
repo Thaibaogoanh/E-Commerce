@@ -6,7 +6,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
 import { User, UserRole } from '../../entities/user.entity';
 import { Order } from '../../entities/order.entity';
 import { Review } from '../../entities/review.entity';
@@ -15,11 +15,11 @@ import { RewardPoint, PointType } from '../../entities/reward-point.entity';
 import {
   CreateUserDto,
   UpdateUserDto,
-  ChangePasswordDto,
   UserQueryDto,
   UserResponseDto,
   UserStatsDto,
 } from '../../dto/user.dto';
+import { ChangePasswordDto } from '../../dto/auth.dto';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
@@ -270,7 +270,7 @@ export class UsersService {
       userGrowth,
     ] = await Promise.all([
       this.userRepository.count(),
-      this.userRepository.count({ where: { isActive: true } }),
+      this.userRepository.count({ where: { is_active: true } }),
       this.userRepository.count({ where: { role: UserRole.ADMIN } }),
       this.userRepository
         .createQueryBuilder('user')
@@ -311,7 +311,9 @@ export class UsersService {
       .getRawMany();
 
     const userIds = topCustomers.map((customer) => customer.userId);
-    const users = await this.userRepository.findByIds(userIds);
+    const users = await this.userRepository.find({
+      where: { id: In(userIds) },
+    });
 
     return Promise.all(
       users.map((user) => this.formatUserResponseWithStats(user)),
@@ -466,13 +468,17 @@ export class UsersService {
   }
 
   private formatUserResponse(user: User): UserResponseDto {
+    // Get default address or first address
+    const defaultAddress = user.addresses?.find(addr => addr.is_default) || user.addresses?.[0];
+    const addressString = defaultAddress ? `${defaultAddress.line1}${defaultAddress.line2 ? ', ' + defaultAddress.line2 : ''}, ${defaultAddress.state} ${defaultAddress.zip}, ${defaultAddress.country}` : undefined;
+
     return {
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
       phone: user.phone,
-      address: user.address,
+      address: addressString,
       image: user.image,
       isActive: user.isActive,
       createdAt: user.createdAt,

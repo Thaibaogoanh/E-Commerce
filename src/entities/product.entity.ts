@@ -41,6 +41,14 @@ export class Product {
   @Column({ type: 'simple-array', nullable: true })
   design_areas: string[]; // e.g., ["Front", "Back", "Sleeve"]
 
+  @Column({ type: 'jsonb', nullable: true })
+  printArea: {
+    top: number; // Percentage from top
+    left: number; // Percentage from left
+    width: number; // Percentage width
+    height: number; // Percentage height
+  };
+
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   price: number;
 

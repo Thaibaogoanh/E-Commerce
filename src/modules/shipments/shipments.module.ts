@@ -5,9 +5,13 @@ import { ShipmentsController } from './shipments.controller';
 import { Shipment } from '../../entities/shipment.entity';
 import { TrackEvent } from '../../entities/track-event.entity';
 import { Order } from '../../entities/order.entity';
+import { ShipmentItem } from '../../entities/shipment-item.entity';
+import { OrderItem } from '../../entities/order-item.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Shipment, TrackEvent, Order])],
+  imports: [
+    TypeOrmModule.forFeature([Shipment, TrackEvent, Order, ShipmentItem, OrderItem]),
+  ],
   controllers: [ShipmentsController],
   providers: [ShipmentsService],
   exports: [ShipmentsService],

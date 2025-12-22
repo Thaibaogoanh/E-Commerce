@@ -5,10 +5,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToOne,
+  OneToMany,
   JoinColumn,
   Index,
 } from 'typeorm';
 import { SkuVariant } from './sku-variant.entity';
+import { StockMovement } from './stock-movement.entity';
 
 @Entity('stocks')
 @Index(['skuId'], { unique: true })
@@ -41,5 +43,7 @@ export class Stock {
   @OneToOne(() => SkuVariant, (skuVariant) => skuVariant.stock)
   @JoinColumn({ name: 'skuId', referencedColumnName: 'SkuID' })
   skuVariant: SkuVariant;
-}
 
+  @OneToMany(() => StockMovement, (movement) => movement.stock)
+  movements: StockMovement[];
+}

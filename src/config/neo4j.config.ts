@@ -20,10 +20,13 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
 
     try {
       await this.driver.verifyConnectivity();
-      console.log('Neo4j connection successful');
+      console.log('✅ Neo4j connection successful');
     } catch (error) {
-      console.error('Neo4j connection failed:', error);
-      throw error;
+      console.warn(
+        '⚠️ Neo4j unavailable. If Neo4j is not needed, you can disable it in app.module.ts',
+      );
+      console.warn('Error details:', (error as Error).message);
+      // Don't throw - allow app to continue without Neo4j
     }
   }
 

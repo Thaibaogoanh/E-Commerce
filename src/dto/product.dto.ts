@@ -8,6 +8,7 @@ import {
   Min,
   Max,
   IsNotEmpty,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -187,6 +188,14 @@ export class ProductQueryDto {
   limit?: number = 10;
 }
 
+export class CategoryDto {
+  @IsUUID()
+  id: string;
+
+  @IsString()
+  name: string;
+}
+
 export class ProductResponseDto {
   id: string;
   name: string;
@@ -207,8 +216,9 @@ export class ProductResponseDto {
   numReviews: number;
   createdAt: Date;
   updatedAt: Date;
-  category?: {
-    id: string;
-    name: string;
-  };
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CategoryDto)
+  category?: CategoryDto;
 }

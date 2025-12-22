@@ -10,6 +10,14 @@ import {
   UseGuards,
   ParseUUIDPipe,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+  ApiParam,
+} from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { AdminGuard } from '../../guards/admin.guard';
@@ -20,12 +28,17 @@ import {
   ProductResponseDto,
 } from '../../dto/product.dto';
 
+@ApiTags('Products')
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a new product (admin only)' })
+  @ApiResponse({ status: 201, description: 'Product created successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async create(
     @Body() createProductDto: CreateProductDto,
   ): Promise<ProductResponseDto> {
@@ -33,6 +46,12 @@ export class ProductsController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'Get all products with filters and pagination' })
+  @ApiResponse({ status: 200, description: 'Products retrieved successfully' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'category', required: false, type: String })
+  @ApiQuery({ name: 'sort', required: false, type: String })
   async findAll(@Query() queryDto: ProductQueryDto): Promise<{
     products: ProductResponseDto[];
     total: number;

@@ -65,6 +65,12 @@ export class Design {
   @Column({ type: 'varchar', length: 255 })
   title: string;
 
+  @Column({ type: 'int', default: 0 })
+  downloads: number;
+
+  @Column({ type: 'int', default: 0 })
+  likes: number;
+
   @CreateDateColumn()
   createdAt: Date;
 

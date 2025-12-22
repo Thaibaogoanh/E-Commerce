@@ -18,8 +18,9 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "seed": "node seed-db.js",
-    "seed:ts": "ts-node src/seeders/seed.ts"
+    "db:setup": "ts-node -r tsconfig-paths/register src/scripts/setup-database.ts",
+    "db:reset": "ts-node -r tsconfig-paths/register src/scripts/reset-seed-data.ts",
+    "seed": "ts-node -r tsconfig-paths/register src/scripts/reset-seed-data.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -30,11 +31,15 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.2.3",
     "@nestjs/typeorm": "^11.0.0",
+    "@types/handlebars": "^4.0.40",
+    "@types/nodemailer": "^7.0.4",
     "bcryptjs": "^3.0.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "cors": "^2.8.5",
+    "handlebars": "^4.7.8",
     "neo4j-driver": "^6.0.0",
+    "nodemailer": "^7.0.11",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",

@@ -14,6 +14,7 @@ import { Order } from './order.entity';
 import { Address } from './address.entity';
 import { Packaging } from './packaging.entity';
 import { TrackEvent } from './track-event.entity';
+import { ShipmentItem } from './shipment-item.entity';
 
 export enum ShipmentStatus {
   PENDING = 'pending',
@@ -41,7 +42,7 @@ export class Shipment {
   packagingId: string;
 
   @Column({ type: 'date', nullable: true })
-  ship_date: Date;
+  ship_date: Date | null;
 
   @Column({
     type: 'enum',
@@ -60,7 +61,7 @@ export class Shipment {
   service_level: string; // e.g., "Standard", "Express", "Overnight"
 
   @Column({ type: 'varchar', length: 100, nullable: true })
-  tracking_number: string;
+  tracking_number: string | null;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -83,5 +84,7 @@ export class Shipment {
 
   @OneToMany(() => TrackEvent, (trackEvent) => trackEvent.shipment)
   trackEvents: TrackEvent[];
-}
 
+  @OneToMany(() => ShipmentItem, (item) => item.shipment)
+  items: ShipmentItem[];
+}

@@ -63,16 +63,16 @@ export class RewardsService {
     userId: string,
     limit?: number,
   ): Promise<RewardPoint[]> {
-    const query = this.rewardPointRepository.find({
-      where: { userId },
-      order: { createdAt: 'DESC' },
-    });
+    const queryBuilder = this.rewardPointRepository
+      .createQueryBuilder('rewardPoint')
+      .where('rewardPoint.userId = :userId', { userId })
+      .orderBy('rewardPoint.createdAt', 'DESC');
 
     if (limit) {
-      query.take(limit);
+      queryBuilder.take(limit);
     }
 
-    return query;
+    return queryBuilder.getMany();
   }
 
   async getRewardCatalog(): Promise<RewardCatalog[]> {

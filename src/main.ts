@@ -3,7 +3,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { autoSeedDatabase } from './seeders/auto-seed';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -19,7 +18,7 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false, // Allow extra fields in responses
       transform: true,
     }),
   );
@@ -32,24 +31,24 @@ async function bootstrap() {
     .setTitle('🌿 SUSTAINIQUE - Backend API')
     .setDescription(
       'API Documentation for SUSTAINIQUE - Print-on-Demand E-commerce Platform\n\n' +
-      '## 🎯 Overview\n' +
-      'This is the comprehensive API documentation for the Sustainique backend, a Print-on-Demand (POD) platform ' +
-      'specializing in sustainable and eco-friendly fashion.\n\n' +
-      '## 🔑 Key Features\n' +
-      '- ✅ Print-on-Demand (POD) System\n' +
-      '- ✅ Customizer Tool with Save/Load Designs\n' +
-      '- ✅ Green Points & Rewards System\n' +
-      '- ✅ Voucher Management\n' +
-      '- ✅ Favorites/Wishlist\n' +
-      '- ✅ Order Management with Tracking\n' +
-      '- ✅ Review System with Media Support\n' +
-      '- ✅ SKU Variants (Size, Color, Material)\n' +
-      '- ✅ Design Library Management\n\n' +
-      '## 🔐 Authentication\n' +
-      'Most endpoints require JWT Bearer token in Authorization header:\n' +
-      '`Authorization: Bearer <your-jwt-token>`\n\n' +
-      '## 📊 Base URL\n' +
-      '`http://localhost:5000/api`'
+        '## 🎯 Overview\n' +
+        'This is the comprehensive API documentation for the Sustainique backend, a Print-on-Demand (POD) platform ' +
+        'specializing in sustainable and eco-friendly fashion.\n\n' +
+        '## 🔑 Key Features\n' +
+        '- ✅ Print-on-Demand (POD) System\n' +
+        '- ✅ Customizer Tool with Save/Load Designs\n' +
+        '- ✅ Green Points & Rewards System\n' +
+        '- ✅ Voucher Management\n' +
+        '- ✅ Favorites/Wishlist\n' +
+        '- ✅ Order Management with Tracking\n' +
+        '- ✅ Review System with Media Support\n' +
+        '- ✅ SKU Variants (Size, Color, Material)\n' +
+        '- ✅ Design Library Management\n\n' +
+        '## 🔐 Authentication\n' +
+        'Most endpoints require JWT Bearer token in Authorization header:\n' +
+        '`Authorization: Bearer <your-jwt-token>`\n\n' +
+        '## 📊 Base URL\n' +
+        '`http://localhost:5000/api`',
     )
     .setVersion('1.0.0')
     .addTag('Auth', 'Authentication endpoints')
@@ -91,16 +90,6 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 5000);
-
-  // Auto-seed database if in development mode
-  if (process.env.NODE_ENV === 'development') {
-    try {
-      const dataSource = app.get('DataSource');
-      await autoSeedDatabase(dataSource);
-    } catch (error) {
-      console.log('⚠️ Auto-seeding skipped (DataSource not available)');
-    }
-  }
 
   await app.listen(port);
   console.log(

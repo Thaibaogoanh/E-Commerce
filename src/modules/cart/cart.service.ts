@@ -16,6 +16,7 @@ import {
   CartResponseDto,
   CartSummaryDto,
 } from '../../dto/cart.dto';
+import { VouchersService } from '../vouchers/vouchers.service';
 
 @Injectable()
 export class CartService {
@@ -29,12 +30,13 @@ export class CartService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private dataSource: DataSource,
+    private vouchersService: VouchersService,
   ) {}
 
   async getOrCreateCart(userId: string): Promise<Cart> {
     // Check if user exists
     const user = await this.userRepository.findOne({
-      where: { id: userId, isActive: true },
+      where: { UserID: userId, is_active: true },
     });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -69,7 +71,7 @@ export class CartService {
     userId: string,
     addToCartDto: AddToCartDto,
   ): Promise<CartResponseDto> {
-    const { productId, quantity } = addToCartDto;
+    const { productId, quantity, colorCode, sizeCode, customDesignData, designId } = addToCartDto;
 
     // Verify product exists and is active
     const product = await this.productRepository.findOne({
@@ -101,7 +103,7 @@ export class CartService {
 
       if (existingCartItem) {
         // Update existing item
-        const newQuantity = existingCartItem.quantity + quantity;
+        const newQuantity = existingCartItem.qty + quantity;
 
         // Check total stock
         if (product.stock < newQuantity) {
@@ -110,9 +112,22 @@ export class CartService {
           );
         }
 
-        existingCartItem.quantity = newQuantity;
-        existingCartItem.price = product.price;
-        existingCartItem.subtotal = product.price * newQuantity;
+        existingCartItem.qty = newQuantity;
+        existingCartItem.unit_price_snapshot = product.price;
+        
+        // Update custom design data if provided
+        if (customDesignData) {
+          existingCartItem.customDesignData = customDesignData;
+        }
+        if (colorCode) {
+          existingCartItem.colorCode = colorCode;
+        }
+        if (sizeCode) {
+          existingCartItem.sizeCode = sizeCode;
+        }
+        if (designId) {
+          existingCartItem.designId = designId;
+        }
 
         await queryRunner.manager.save(CartItem, existingCartItem);
       } else {
@@ -120,10 +135,13 @@ export class CartService {
         const cartItem = this.cartItemRepository.create({
           cartId: cart.id,
           productId,
-          quantity,
-          price: product.price,
-          subtotal: product.price * quantity,
-        });
+          qty: quantity,
+          unit_price_snapshot: product.price,
+          colorCode: colorCode || null,
+          sizeCode: sizeCode || null,
+          designId: designId || null,
+          customDesignData: customDesignData || null,
+        } as Partial<CartItem>);
 
         await queryRunner.manager.save(CartItem, cartItem);
       }
@@ -193,7 +211,6 @@ export class CartService {
       // Update cart item
       cartItem.quantity = quantity;
       cartItem.price = cartItem.product.price;
-      cartItem.subtotal = cartItem.product.price * quantity;
 
       await queryRunner.manager.save(CartItem, cartItem);
 
@@ -323,15 +340,63 @@ export class CartService {
     };
   }
 
+  async applyVoucher(
+    userId: string,
+    voucherCode: string,
+  ): Promise<{ message: string; discount?: number; discountAmount?: number }> {
+    // Get cart to calculate discount
+    const cart = await this.getOrCreateCart(userId);
+    const orderAmount = cart.totalAmount || 0;
+
+    // Use VouchersService to validate voucher
+    const validationResult = await this.vouchersService.validateVoucher(
+      voucherCode,
+      userId,
+      orderAmount,
+    );
+
+    if (!validationResult.valid) {
+      throw new BadRequestException(
+        validationResult.message || 'Invalid voucher code',
+      );
+    }
+
+    const discountAmount = validationResult.discount;
+    const voucher = validationResult.voucher;
+
+    if (!voucher) {
+      throw new BadRequestException('Voucher not found');
+    }
+
+    // Format success message based on voucher type
+    let message = 'Voucher applied successfully!';
+    if (voucher.type === 'percentage') {
+      message = `Voucher applied successfully! ${voucher.value}% discount`;
+    } else if (voucher.type === 'fixed_amount') {
+      message = `Voucher applied successfully! Discount: ${discountAmount.toLocaleString('vi-VN')}₫`;
+    } else if (voucher.type === 'free_shipping') {
+      message = 'Free shipping voucher applied successfully!';
+    }
+
+    return {
+      message,
+      discount:
+        voucher.type === 'percentage'
+          ? Number(voucher.value) / 100
+          : discountAmount / orderAmount, // Return as decimal for percentage
+      discountAmount: parseFloat(discountAmount.toFixed(2)),
+    };
+  }
+
   private async updateCartTotals(
     queryRunner: any,
     cartId: string,
   ): Promise<void> {
-    // Calculate totals
+    // Calculate totals - use actual column names, not getters
     const result = await queryRunner.manager
       .createQueryBuilder(CartItem, 'item')
-      .select('SUM(item.quantity)', 'totalItems')
-      .addSelect('SUM(item.subtotal)', 'totalAmount')
+      .select('SUM(item.qty)', 'totalItems')
+      .addSelect('SUM(item.qty * item.unit_price_snapshot)', 'totalAmount')
       .where('item.cartId = :cartId', { cartId })
       .getRawOne();
 
@@ -360,6 +425,10 @@ export class CartService {
               quantity: item.quantity,
               price: item.price,
               subtotal: item.subtotal,
+              sizeCode: item.sizeCode,
+              colorCode: item.colorCode,
+              designId: item.designId,
+              customDesignData: item.customDesignData,
               product: {
                 id: item.product.id,
                 name: item.product.name,

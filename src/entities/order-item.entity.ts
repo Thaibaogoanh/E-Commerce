@@ -7,10 +7,12 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
+  OneToMany,
 } from 'typeorm';
 import { Order } from './order.entity';
 import { Product } from './product.entity';
 import { SkuVariant } from './sku-variant.entity';
+import { ShipmentItem } from './shipment-item.entity';
 
 @Entity('order_items')
 @Index(['orderId'])
@@ -34,6 +36,35 @@ export class OrderItem {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   unit_price: number;
 
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  colorCode: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  sizeCode: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  designId: string;
+
+  @Column({ type: 'jsonb', nullable: true })
+  customDesignData?: {
+    elements: Array<{
+      id: string;
+      type: 'text' | 'image' | 'design';
+      content: string;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      rotation: number;
+      fontSize?: number;
+      fontFamily?: string;
+      color?: string;
+      textAlign?: string;
+    }>;
+    color: string;
+    size: string;
+  };
+
   @CreateDateColumn()
   createdAt: Date;
 
@@ -52,6 +83,9 @@ export class OrderItem {
   @ManyToOne(() => SkuVariant, (skuVariant) => skuVariant.orderItems)
   @JoinColumn({ name: 'skuId', referencedColumnName: 'SkuID' })
   skuVariant: SkuVariant;
+
+  @OneToMany(() => ShipmentItem, (shipmentItem) => shipmentItem.orderItem)
+  shipmentItems: ShipmentItem[];
 
   // Alias for backward compatibility
   get quantity(): number {
@@ -74,4 +108,3 @@ export class OrderItem {
     return this.qty * this.unit_price;
   }
 }
-
