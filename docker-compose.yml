@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # --- PostgreSQL Server ---
+  postgres:
+    image: postgres:16-alpine
+    container_name: local_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydatabase
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # --- Giao diện pgAdmin (Thêm cái này) ---
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: local_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com  # Tài khoản đăng nhập pgAdmin
+      PGADMIN_DEFAULT_PASSWORD: admin         # Mật khẩu đăng nhập pgAdmin
+    ports:
+      - "5050:80"     # Chạy ở cổng 5050
+    depends_on:
+      - postgres
+
+  # --- Neo4j ---
+  neo4j:
+    image: neo4j:5-community
+    container_name: local_neo4j
+    restart: always
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: neo4j/mypassword
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+    volumes:
+      - neo4j_data:/data
+
+volumes:
+  postgres_data:
+  neo4j_data:

@@ -33,7 +33,7 @@ export class PaymentService {
     private paymentMethodRepository: Repository<PaymentMethod>,
     private vnpayGateway: VNPayGateway,
     private configService: ConfigService,
-  ) {}
+  ) { }
 
   /**
    * Initialize payment
@@ -41,6 +41,16 @@ export class PaymentService {
    */
   async initiatePayment(request: PaymentInitRequest): Promise<PaymentResponse> {
     try {
+      // Validate amount
+      if (!request.amount || request.amount <= 0) {
+        throw new BadRequestException('Invalid payment amount');
+      }
+
+      // Validate orderId
+      if (!request.orderId || request.orderId.trim() === '') {
+        throw new BadRequestException('Order ID is required');
+      }
+
       let paymentMethodId = request.paymentMethodId;
 
       // Nếu paymentMethodId không phải UUID, tìm theo tên (e.g., 'vnpay', 'momo')
@@ -68,22 +78,25 @@ export class PaymentService {
       // Lấy frontend URL từ config
       const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
 
+      // Tạo description an toàn cho VNPay (chỉ dùng alphanumeric)
+      const safeDescription = `Payment for order ${request.orderId.replace(/-/g, '').substring(0, 20)}`;
+
       // Gọi VNPay gateway để lấy payment URL
       try {
         const gatewayResult = await this.vnpayGateway.initiatePayment({
           amount: request.amount,
           orderId: savedPayment.PaymentID,
-          description: request.description,
+          description: safeDescription,
           returnUrl: `${frontendUrl}/payment/callback?paymentId=${savedPayment.PaymentID}`,
-          cancelUrl: `${frontendUrl}/payment/cancel?paymentId=${savedPayment.PaymentID}`,
+          // cancelUrl: `${frontendUrl}/payment/cancel?paymentId=${savedPayment.PaymentID}`,
         });
 
-        // Lưu transaction ID
+        // Lưu transaction ID từ gateway
         savedPayment.txn_ref = gatewayResult.transactionId;
         await this.paymentRepository.save(savedPayment);
 
         this.logger.log(
-          `[PaymentService] Payment initiated: ${savedPayment.PaymentID} for order ${request.orderId}`,
+          `[PaymentService] Payment initiated: ${savedPayment.PaymentID} for order ${request.orderId}, txnRef: ${gatewayResult.transactionId}`,
         );
 
         return {
@@ -111,6 +124,9 @@ export class PaymentService {
       this.logger.error(
         `[PaymentService] Error initiating payment: ${error?.message || 'Unknown error'}`,
       );
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       throw new BadRequestException('Failed to initiate payment');
     }
   }
@@ -162,29 +178,43 @@ export class PaymentService {
     callbackParams: any,
   ): Promise<PaymentResponse> {
     try {
+      this.logger.log(`[PaymentService] Processing VNPay callback for payment: ${paymentId}`);
+      this.logger.debug(`[PaymentService] Callback params: ${JSON.stringify(callbackParams)}`);
+
       const payment = await this.paymentRepository.findOne({
         where: { PaymentID: paymentId },
       });
 
       if (!payment) {
+        this.logger.error(`[PaymentService] Payment not found: ${paymentId}`);
         throw new BadRequestException('Payment not found');
       }
 
+      // Parse amount từ callback (VNPay trả về string)
+      const vnpAmount = callbackParams.vnp_Amount
+        ? parseInt(String(callbackParams.vnp_Amount), 10)
+        : payment.amount * 100;
+
       // Verify payment với VNPay gateway
+      // QUAN TRỌNG: Phải truyền TẤT CẢ params từ callback VNPay
+      // vì signature được tạo từ tất cả params vnp_* (trừ vnp_SecureHash, vnp_SecureHashType)
       const verifyResult = await this.vnpayGateway.verifyPayment({
-        transactionId: callbackParams.vnp_TxnRef || paymentId,
-        amount: callbackParams.vnp_Amount || payment.amount * 100,
-        ...callbackParams,
+        ...callbackParams, // Truyền tất cả params từ VNPay callback
+        transactionId: callbackParams.vnp_TxnRef || payment.txn_ref || paymentId,
+        amount: vnpAmount, // Giữ lại để compatible với interface
       });
 
       if (verifyResult.success) {
         payment.payment_status = PaymentStatus.COMPLETED;
         payment.paid_at = new Date();
-        payment.txn_ref = callbackParams.vnp_TransactionNo || callbackParams.vnp_TxnRef;
+        // Lưu transaction number từ VNPay (nếu có)
+        if (callbackParams.vnp_TransactionNo) {
+          payment.txn_ref = callbackParams.vnp_TransactionNo;
+        }
         await this.paymentRepository.save(payment);
 
         this.logger.log(
-          `[PaymentService] VNPay payment verified successfully: ${paymentId}`,
+          `[PaymentService] VNPay payment verified successfully: ${paymentId}, txnNo: ${callbackParams.vnp_TransactionNo}`,
         );
 
         // TODO: Update order status to 'paid' or 'processing'

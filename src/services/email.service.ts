@@ -78,14 +78,14 @@ export class EmailService {
 
     // Load template file
     const templatePath = path.join(this.templatesPath, `${templateName}.${extension}`);
-    
+
     try {
       const templateContent = fs.readFileSync(templatePath, 'utf-8');
       const compiledTemplate = Handlebars.compile(templateContent);
-      
+
       // Cache compiled template
       this.templateCache.set(cacheKey, compiledTemplate);
-      
+
       return compiledTemplate;
     } catch (error) {
       this.logger.error(
@@ -137,10 +137,7 @@ export class EmailService {
       const textContent = this.renderTemplate('order-confirmation', context, 'txt');
 
       const mailOptions = {
-        from: this.configService.get<string>(
-          'SMTP_FROM',
-          this.configService.get<string>('SMTP_USER'),
-        ),
+        from: this.configService.get<string>('SMTP_FROM') || this.configService.get<string>('SMTP_USER'),
         to: email,
         subject: `Xác nhận đơn hàng #${context.orderId} - Sustainique`,
         html: htmlContent,
@@ -188,10 +185,7 @@ export class EmailService {
       const textContent = this.renderTemplate('shipping-notification', context, 'txt');
 
       const mailOptions = {
-        from: this.configService.get<string>(
-          'SMTP_FROM',
-          this.configService.get<string>('SMTP_USER'),
-        ),
+        from: this.configService.get<string>('SMTP_FROM') || this.configService.get<string>('SMTP_USER'),
         to: email,
         subject: `Đơn hàng #${context.orderId} đã được gửi đi - Sustainique`,
         html: htmlContent,
@@ -239,10 +233,7 @@ export class EmailService {
       const htmlContent = this.renderTemplate('password-reset', context, 'html');
 
       const mailOptions = {
-        from: this.configService.get<string>(
-          'SMTP_FROM',
-          this.configService.get<string>('SMTP_USER'),
-        ),
+        from: this.configService.get<string>('SMTP_FROM') || this.configService.get<string>('SMTP_USER'),
         to: email,
         subject: 'Đặt lại mật khẩu - Sustainique',
         html: htmlContent,
@@ -288,10 +279,7 @@ export class EmailService {
       const htmlContent = this.renderTemplate('welcome', context, 'html');
 
       const mailOptions = {
-        from: this.configService.get<string>(
-          'SMTP_FROM',
-          this.configService.get<string>('SMTP_USER'),
-        ),
+        from: this.configService.get<string>('SMTP_FROM') || this.configService.get<string>('SMTP_USER'),
         to: email,
         subject: 'Chào mừng đến với Sustainique!',
         html: htmlContent,
