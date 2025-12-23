@@ -110,7 +110,7 @@ export class UsersService {
 
   async findOne(id: string): Promise<UserResponseDto> {
     const user = await this.userRepository.findOne({
-      where: { id },
+      where: { UserID: id },
     });
 
     if (!user) {
@@ -347,10 +347,10 @@ export class UsersService {
       await Promise.all([
         this.orderRepository.count({ where: { userId: user.id } }),
         this.orderRepository
-          .createQueryBuilder('order')
-          .select('SUM(order.totalAmount)', 'total')
-          .where('order.userId = :userId', { userId: user.id })
-          .andWhere('order.paymentStatus = :status', { status: 'completed' })
+          .createQueryBuilder('o')
+          .select('SUM(o.Total)', 'total')
+          .where('o.userId = :userId', { userId: user.id })
+          .andWhere('o.paymentStatus = :status', { status: 'completed' })
           .getRawOne(),
         this.reviewRepository.count({ where: { userId: user.id } }),
         this.orderRepository.findOne({

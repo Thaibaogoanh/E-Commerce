@@ -49,7 +49,7 @@ export class Order {
   })
   Status: OrderStatus;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   Order_date: Date;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })

@@ -281,8 +281,13 @@ export async function seedDatabaseEnhanced(dataSource: DataSource) {
 
     // 9. PAYMENT METHODS
     const pm = [
-      { PaymentMethodID: PAYMENT_METHOD_ALICE_CARD, userId: USER_ALICE_ID, method: PaymentMethodType.CREDIT_CARD, provider: 'Visa', accountNumber: '****-****-****-1234', isDefault: true, status: PaymentMethodStatus.ACTIVE },
-      { PaymentMethodID: PAYMENT_METHOD_ALICE_BANK, userId: USER_ALICE_ID, method: PaymentMethodType.BANK_TRANSFER, provider: 'Vietcombank', accountNumber: 'ABC123456789', isDefault: false, status: PaymentMethodStatus.ACTIVE },
+      // User-specific payment methods
+      { MethodID: PAYMENT_METHOD_ALICE_CARD, userId: USER_ALICE_ID, method: PaymentMethodType.CREDIT_CARD, card_holder_name: 'Visa', card_no: '****-****-****-1234', is_default: true, status: PaymentMethodStatus.ACTIVE },
+      { MethodID: PAYMENT_METHOD_ALICE_BANK, userId: USER_ALICE_ID, method: PaymentMethodType.BANK_TRANSFER, card_holder_name: 'Vietcombank', card_no: 'ABC123456789', is_default: false, status: PaymentMethodStatus.ACTIVE },
+      // Payment gateway methods (shared, no userId)
+      { MethodID: '00000000-0000-0000-0000-000000000001', userId: undefined, MethodName: 'vnpay', method: PaymentMethodType.CREDIT_CARD, status: PaymentMethodStatus.ACTIVE },
+      { MethodID: '00000000-0000-0000-0000-000000000002', userId: undefined, MethodName: 'momo', method: PaymentMethodType.CREDIT_CARD, status: PaymentMethodStatus.ACTIVE },
+      { MethodID: '00000000-0000-0000-0000-000000000003', userId: undefined, MethodName: 'cod', method: PaymentMethodType.CASH_ON_DELIVERY, status: PaymentMethodStatus.ACTIVE },
     ];
     await dataSource.getRepository(PaymentMethod).save(pm);
 

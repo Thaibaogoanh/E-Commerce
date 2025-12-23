@@ -70,6 +70,7 @@ import { Asset } from './entities/asset.entity';
 import { AssetDisposal } from './entities/asset-disposal.entity';
 import { AssetsModule } from './modules/assets/assets.module';
 import { EmailService } from './services/email.service';
+import { PaymentModule } from './modules/payment/payment.module';
 
 @Module({
   imports: [
@@ -148,6 +149,7 @@ import { EmailService } from './services/email.service';
     ReturnReasonsModule,
     EmployeesModule,
     AssetsModule,
+    PaymentModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService, Neo4jService],

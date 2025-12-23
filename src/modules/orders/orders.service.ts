@@ -88,10 +88,11 @@ export class OrdersService {
         );
       }
 
-      // Find SKU variant if color and size provided
+      // Find SKU variant - REQUIRED since OrderItem.skuId is NOT nullable
       let skuVariant: SkuVariant | null = null;
-      let skuId = item.productId; // Fallback to productId
+      let skuId: string;
 
+      // Try to find SKU variant by color and size if provided
       if (item.colorCode && item.sizeCode) {
         skuVariant = await this.skuVariantRepository.findOne({
           where: {
@@ -100,53 +101,46 @@ export class OrdersService {
             SizeCode: item.sizeCode,
           },
         });
+      }
 
-        if (skuVariant) {
-          skuId = skuVariant.SkuID;
+      // If exact SKU not found, try to find any SKU for this product
+      if (!skuVariant) {
+        skuVariant = await this.skuVariantRepository.findOne({
+          where: { productId: item.productId },
+        });
+      }
 
-          // Check SKU variant stock (more accurate than product stock)
-          try {
-            const stock = await this.inventoryService.getBySku(skuId);
-            const availableStock =
-              stock.qty_on_hand - stock.qty_reserved;
+      // If still no SKU found, product cannot be ordered
+      if (!skuVariant) {
+        throw new BadRequestException(
+          `Product ${product.name} has no SKU variants available for ordering.`,
+        );
+      }
 
-            if (availableStock < item.quantity) {
-              throw new BadRequestException(
-                `Insufficient stock for ${product.name} (${item.colorCode}, ${item.sizeCode}). Available: ${availableStock}, Requested: ${item.quantity}`,
-              );
-            }
-          } catch (error: any) {
-            // If stock not found, fallback to product stock check
-            if (error instanceof NotFoundException) {
-              this.logger.warn(
-                `Stock not found for SKU ${skuId}, falling back to product stock check`,
-              );
-              if (product.stock < item.quantity) {
-                throw new BadRequestException(
-                  `Insufficient stock for product ${product.name}. Available: ${product.stock}`,
-                );
-              }
-            } else {
-              throw error;
-            }
-          }
-        } else {
-          // SKU variant not found, check product stock
-          this.logger.warn(
-            `SKU variant not found for product ${item.productId} with color ${item.colorCode} and size ${item.sizeCode}`,
+      skuId = skuVariant.SkuID;
+
+      // Check stock - try SKU variant stock first, fallback to product stock
+      try {
+        const stock = await this.inventoryService.getBySku(skuId);
+        const availableStock = stock.qty_on_hand - stock.qty_reserved;
+
+        if (availableStock < item.quantity) {
+          throw new BadRequestException(
+            `Insufficient stock for ${product.name}. Available: ${availableStock}, Requested: ${item.quantity}`,
           );
+        }
+      } catch (error: any) {
+        // If stock not found for SKU, fallback to product stock
+        if (error instanceof NotFoundException) {
           if (product.stock < item.quantity) {
             throw new BadRequestException(
               `Insufficient stock for product ${product.name}. Available: ${product.stock}`,
             );
           }
-        }
-      } else {
-        // No color/size specified, check product stock
-        if (product.stock < item.quantity) {
-          throw new BadRequestException(
-            `Insufficient stock for product ${product.name}. Available: ${product.stock}`,
-          );
+        } else if (error instanceof BadRequestException) {
+          throw error; // Re-throw our own stock errors
+        } else {
+          throw error;
         }
       }
 
@@ -177,8 +171,10 @@ export class OrdersService {
       // Create order
       const order = this.orderRepository.create({
         userId,
-        status: OrderStatus.PENDING,
-        totalAmount,
+        Status: OrderStatus.PENDING,
+        Subtotal: totalAmount,
+        Total: totalAmount,
+        Order_date: new Date(),
         shippingAddress,
         paymentMethod,
         paymentStatus: PaymentStatus.PENDING,

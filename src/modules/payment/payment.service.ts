@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Payment, PaymentStatus } from '../../entities/payment.entity';
+import { PaymentMethod } from '../../entities/payment-method.entity';
 import { VNPayGateway } from './gateways/vnpay.gateway';
 
 export interface PaymentInitRequest {
@@ -28,6 +29,8 @@ export class PaymentService {
   constructor(
     @InjectRepository(Payment)
     private paymentRepository: Repository<Payment>,
+    @InjectRepository(PaymentMethod)
+    private paymentMethodRepository: Repository<PaymentMethod>,
     private vnpayGateway: VNPayGateway,
     private configService: ConfigService,
   ) {}
@@ -38,9 +41,22 @@ export class PaymentService {
    */
   async initiatePayment(request: PaymentInitRequest): Promise<PaymentResponse> {
     try {
+      let paymentMethodId = request.paymentMethodId;
+
+      // Nếu paymentMethodId không phải UUID, tìm theo tên (e.g., 'vnpay', 'momo')
+      if (!paymentMethodId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        const paymentMethod = await this.paymentMethodRepository.findOne({
+          where: { MethodName: request.paymentMethodId },
+        });
+        if (!paymentMethod) {
+          throw new BadRequestException(`Payment method '${request.paymentMethodId}' not found`);
+        }
+        paymentMethodId = paymentMethod.MethodID;
+      }
+
       // Tạo payment record
       const payment = this.paymentRepository.create({
-        paymentMethodId: request.paymentMethodId,
+        paymentMethodId,
         orderId: request.orderId,
         amount: request.amount,
         payment_status: PaymentStatus.PENDING,

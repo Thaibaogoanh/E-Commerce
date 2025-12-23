@@ -32,8 +32,11 @@ export class PaymentMethod {
   @PrimaryGeneratedColumn('uuid')
   MethodID: string;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', nullable: true })
   userId: string;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  MethodName: string; // For payment gateways: 'vnpay', 'momo', 'paypal'
 
   @Column({
     type: 'enum',

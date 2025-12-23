@@ -1076,8 +1076,10 @@ src/
 
 ## 📝 Notes
 
-- Default test user: `alice@example.com` / `password123`
-- Admin user: `admin@example.com` / `password123`
+    console.log('   Admin: admin@example.com / admin123');
+    console.log('   User: alice@example.com / user1pass');
+    console.log('   User: bob@example.com / user2pass');
+    console.log('   User: charlie@example.com / user3pass');
 - All passwords hashed with bcrypt
 - JWT tokens expire after 24 hours
 - Stripe keys needed for payment (optional for development)

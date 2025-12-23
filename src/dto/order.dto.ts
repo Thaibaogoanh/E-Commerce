@@ -21,7 +21,7 @@ export class CreateOrderItemDto {
   quantity: number;
 
   @IsNumber()
-  @Min(0)
+  @Min(0.01, { message: 'Price must be greater than 0' })
   price: number;
 
   @IsOptional()

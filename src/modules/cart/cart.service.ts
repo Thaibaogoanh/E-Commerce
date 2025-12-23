@@ -419,25 +419,29 @@ export class CartService {
       items: cart.items
         ? cart.items
             .filter((item) => item.product) // Filter out items without products
-            .map((item) => ({
-              id: item.id,
-              productId: item.productId,
-              quantity: item.quantity,
-              price: item.price,
-              subtotal: item.subtotal,
-              sizeCode: item.sizeCode,
-              colorCode: item.colorCode,
-              designId: item.designId,
-              customDesignData: item.customDesignData,
-              product: {
-                id: item.product.id,
-                name: item.product.name,
-                title: item.product.title,
-                price: item.product.price,
-                image: item.product.image,
-                stock: item.product.stock,
-              },
-            }))
+            .map((item) => {
+              // Ensure price is always set from unit_price_snapshot or product price
+              const itemPrice = item.price || item.unit_price_snapshot || item.product?.price || 0;
+              return {
+                id: item.id,
+                productId: item.productId,
+                quantity: item.quantity,
+                price: itemPrice,
+                subtotal: (item.quantity || 1) * itemPrice,
+                sizeCode: item.sizeCode,
+                colorCode: item.colorCode,
+                designId: item.designId,
+                customDesignData: item.customDesignData,
+                product: {
+                  id: item.product.id,
+                  name: item.product.name,
+                  title: item.product.title,
+                  price: item.product.price,
+                  image: item.product.image,
+                  stock: item.product.stock,
+                },
+              };
+            })
         : [],
     };
   }

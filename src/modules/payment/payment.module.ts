@@ -4,10 +4,11 @@ import { ConfigModule } from '@nestjs/config';
 import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
 import { Payment } from '../../entities/payment.entity';
+import { PaymentMethod } from '../../entities/payment-method.entity';
 import { VNPayGateway } from './gateways/vnpay.gateway';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Payment]), ConfigModule],
+  imports: [TypeOrmModule.forFeature([Payment, PaymentMethod]), ConfigModule],
   controllers: [PaymentController],
   providers: [PaymentService, VNPayGateway],
   exports: [PaymentService],
