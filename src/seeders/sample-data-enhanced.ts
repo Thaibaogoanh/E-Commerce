@@ -422,7 +422,21 @@ await dataSource.getRepository(SavedDesign).save(savedDesigns);
     ];
     await dataSource.getRepository(Design).save(designs);
 
-    // 14. ORDERS
+    // 14. CREATE SKU VARIANTS FIRST (before Orders!)
+    // Seed SKU & Stocks - Map products to SKUs for use in order items
+    const productsForSku = await dataSource.getRepository(Product).find({ where: [{ id: PROD_SHIRT_1_ID }, { id: PROD_TSHIRT_1_ID }, { id: PROD_FASHION_JEAN_1_ID }, { id: PROD_FASHION_JACKET_1_ID }, { id: PROD_FASHION_DRESS_2_ID }, { id: PROD_FASHION_HAT_1_ID }, { id: PROD_SPORT_SHORTS_ID }, { id: PROD_FASHION_SHIRT_2_ID }] });
+    const productToSkuMap = new Map<string, string>(); // productId => skuId
+    const savedStocks: Stock[] = [];
+    for (const product of productsForSku) {
+      const sku = await dataSource.getRepository(SkuVariant).save({
+        productId: product.id, SizeCode: 'M', ColorCode: 'BLACK', price: product.price, weight_grams: 250, base_cost: product.price * 0.6, sku_name: `${product.name}-M-BLACK`, avai_status: 'available', currency: 'VND'
+      });
+      productToSkuMap.set(product.id, sku.SkuID);
+      const stock = await dataSource.getRepository(Stock).save({ skuId: sku.SkuID, qty_inbound: product.quantity || 50, qty_outbound: 0, qty_on_hand: product.quantity || 50, qty_reserved: 0 });
+      savedStocks.push(stock);
+    }
+
+    // 15. ORDERS
     const order1Date = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
     const order2Date = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
     const order3Date = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000);
@@ -436,18 +450,18 @@ await dataSource.getRepository(SavedDesign).save(savedDesigns);
     ];
     await dataSource.getRepository(Order).save(initialOrders);
 
-    // 15. ORDER ITEMS
+    // 15. ORDER ITEMS (with skuId populated from map created above!)
     const orderItems = [
-      { id: ORDER_ITEM_1_ID, orderId: ORDER_1_ID, productId: PROD_SHIRT_1_ID, quantity: 1, price: 750000, subtotal: 750000 },
-      { id: ORDER_ITEM_2_ID, orderId: ORDER_1_ID, productId: PROD_FASHION_JEAN_1_ID, quantity: 1, price: 650000, subtotal: 650000 },
-      { id: ORDER_ITEM_3_ID, orderId: ORDER_2_ID, productId: PROD_FASHION_JACKET_1_ID, quantity: 1, price: 950000, subtotal: 950000 },
-      { id: ORDER_ITEM_4_ID, orderId: ORDER_2_ID, productId: PROD_TSHIRT_1_ID, quantity: 2, price: 200000, subtotal: 400000 },
-      { id: ORDER_ITEM_9_ID, orderId: ORDER_2_ID, productId: PROD_FASHION_HAT_1_ID, quantity: 1, price: 250000, subtotal: 250000 },
-      { id: ORDER_ITEM_5_ID, orderId: ORDER_3_ID, productId: PROD_TSHIRT_1_ID, quantity: 1, price: 200000, subtotal: 200000 },
-      { id: ORDER_ITEM_6_ID, orderId: ORDER_3_ID, productId: PROD_FASHION_HAT_1_ID, quantity: 1, price: 250000, subtotal: 250000 },
-      { id: ORDER_ITEM_7_ID, orderId: ORDER_3_ID, productId: PROD_SPORT_SHORTS_ID, quantity: 1, price: 380000, subtotal: 380000 },
-      { id: ORDER_ITEM_10_ID, orderId: ORDER_3_ID, productId: PROD_FASHION_SHIRT_2_ID, quantity: 1, price: 480000, subtotal: 480000 },
-      { id: ORDER_ITEM_8_ID, orderId: ORDER_4_ID, productId: PROD_TSHIRT_1_ID, quantity: 3, price: 200000, subtotal: 600000 },
+      { id: ORDER_ITEM_1_ID, orderId: ORDER_1_ID, productId: PROD_SHIRT_1_ID, skuId: productToSkuMap.get(PROD_SHIRT_1_ID), qty: 1, unit_price: 750000 },
+      { id: ORDER_ITEM_2_ID, orderId: ORDER_1_ID, productId: PROD_FASHION_JEAN_1_ID, skuId: productToSkuMap.get(PROD_FASHION_JEAN_1_ID), qty: 1, unit_price: 650000 },
+      { id: ORDER_ITEM_3_ID, orderId: ORDER_2_ID, productId: PROD_FASHION_JACKET_1_ID, skuId: productToSkuMap.get(PROD_FASHION_JACKET_1_ID), qty: 1, unit_price: 950000 },
+      { id: ORDER_ITEM_4_ID, orderId: ORDER_2_ID, productId: PROD_TSHIRT_1_ID, skuId: productToSkuMap.get(PROD_TSHIRT_1_ID), qty: 2, unit_price: 200000 },
+      { id: ORDER_ITEM_9_ID, orderId: ORDER_2_ID, productId: PROD_FASHION_HAT_1_ID, skuId: productToSkuMap.get(PROD_FASHION_HAT_1_ID), qty: 1, unit_price: 250000 },
+      { id: ORDER_ITEM_5_ID, orderId: ORDER_3_ID, productId: PROD_TSHIRT_1_ID, skuId: productToSkuMap.get(PROD_TSHIRT_1_ID), qty: 1, unit_price: 200000 },
+      { id: ORDER_ITEM_6_ID, orderId: ORDER_3_ID, productId: PROD_FASHION_HAT_1_ID, skuId: productToSkuMap.get(PROD_FASHION_HAT_1_ID), qty: 1, unit_price: 250000 },
+      { id: ORDER_ITEM_7_ID, orderId: ORDER_3_ID, productId: PROD_SPORT_SHORTS_ID, skuId: productToSkuMap.get(PROD_SPORT_SHORTS_ID), qty: 1, unit_price: 380000 },
+      { id: ORDER_ITEM_10_ID, orderId: ORDER_3_ID, productId: PROD_FASHION_SHIRT_2_ID, skuId: productToSkuMap.get(PROD_FASHION_SHIRT_2_ID), qty: 1, unit_price: 480000 },
+      { id: ORDER_ITEM_8_ID, orderId: ORDER_4_ID, productId: PROD_TSHIRT_1_ID, skuId: productToSkuMap.get(PROD_TSHIRT_1_ID), qty: 3, unit_price: 200000 },
     ];
     await dataSource.getRepository(OrderItem).save(orderItems);
 
@@ -455,7 +469,7 @@ await dataSource.getRepository(SavedDesign).save(savedDesigns);
     const packagingList = [{ name: 'Small Box', max_weight: 500, cost: 0.5 }, { name: 'Medium Box', max_weight: 2000, cost: 1.2 }, { name: 'Poly Mailer', max_weight: 1000, cost: 0.3 }];
     await dataSource.getRepository(Packaging).save(packagingList);
 
-    await dataSource.getRepository(ReturnReason).save([{ reason: 'Damaged item', description: 'Product arrived damaged' }, { reason: 'Wrong item', description: 'Received wrong item' }]);
+    await dataSource.getRepository(ReturnReason).save([{ Reason_code: 'DAMAGED', description: 'Product arrived damaged' }, { Reason_code: 'WRONG_ITEM', description: 'Received wrong item' }]);
 
     await dataSource.getRepository(Employee).save([
       { userId: USER_ADMIN_ID, taxID: 'TAX-ADM-001', full_name: 'Jane Supervisor', role: EmployeeRole.MANAGER, shift: 'morning', salary: 1200, join_date: new Date('2023-01-01') },
@@ -469,17 +483,6 @@ await dataSource.getRepository(SavedDesign).save(savedDesigns);
     await dataSource.getRepository(AssetDisposal).save([{ assetId: assets[0].id, reason: 'Outdated', disposedBy: USER_ADMIN_ID }]);
 
     // 17. STOCK & SHIPMENTS (Logic phức tạp nhất)
-    // Seed SKU & Stocks
-    const productsForSku = await dataSource.getRepository(Product).find({ where: [{ id: PROD_SHIRT_1_ID }, { id: PROD_TSHIRT_1_ID }, { id: PROD_FASHION_JEAN_1_ID }, { id: PROD_FASHION_JACKET_1_ID }] });
-    const savedStocks: Stock[] = [];
-    for (const product of productsForSku) {
-      const sku = await dataSource.getRepository(SkuVariant).save({
-        productId: product.id, SizeCode: 'M', ColorCode: 'BLACK', price: product.price, weight_grams: 250, base_cost: product.price * 0.6, sku_name: `${product.name}-M-BLACK`, avai_status: 'available', currency: 'VND'
-      });
-      const stock = await dataSource.getRepository(Stock).save({ skuId: sku.SkuID, qty_inbound: product.quantity || 50, qty_outbound: 0, qty_on_hand: product.quantity || 50, qty_reserved: 0 });
-      savedStocks.push(stock);
-    }
-
     // Seed Shipments
     const pkgSmall = (await dataSource.getRepository(Packaging).find())[0]?.PKG_ID;
     const ordersForShipments = await dataSource.getRepository(Order).find({ order: { createdAt: 'ASC' } });

@@ -148,9 +148,9 @@ export class EmailService {
       };
 
       this.logger.log(`[EmailService] Sending order confirmation to ${email}`);
-      const info = await this.transporter.sendMail(mailOptions);
+      const info = await (this.transporter.sendMail(mailOptions) as Promise<any>);
       this.logger.log(
-        `[EmailService] Order confirmation email sent successfully. MessageId: ${info.messageId}`,
+        `[EmailService] Order confirmation email sent successfully. MessageId: ${info?.messageId || 'unknown'}`,
       );
     } catch (error: any) {
       this.logger.error(
@@ -201,9 +201,9 @@ export class EmailService {
       this.logger.log(
         `[EmailService] Sending shipping notification to ${email}`,
       );
-      const info = await this.transporter.sendMail(mailOptions);
+      const info = await (this.transporter.sendMail(mailOptions) as Promise<any>);
       this.logger.log(
-        `[EmailService] Shipping notification sent successfully. MessageId: ${info.messageId}`,
+        `[EmailService] Shipping notification sent successfully. MessageId: ${info?.messageId || 'unknown'}`,
       );
     } catch (error: any) {
       this.logger.error(
@@ -250,9 +250,9 @@ export class EmailService {
       };
 
       this.logger.log(`[EmailService] Sending password reset to ${email}`);
-      const info = await this.transporter.sendMail(mailOptions);
+      const info = await (this.transporter.sendMail(mailOptions) as Promise<any>);
       this.logger.log(
-        `[EmailService] Password reset email sent successfully. MessageId: ${info.messageId}`,
+        `[EmailService] Password reset email sent successfully. MessageId: ${info?.messageId || 'unknown'}`,
       );
     } catch (error: any) {
       this.logger.error(
@@ -299,9 +299,9 @@ export class EmailService {
       };
 
       this.logger.log(`[EmailService] Sending welcome email to ${email}`);
-      const info = await this.transporter.sendMail(mailOptions);
+      const info = await (this.transporter.sendMail(mailOptions) as Promise<any>);
       this.logger.log(
-        `[EmailService] Welcome email sent successfully. MessageId: ${info.messageId}`,
+        `[EmailService] Welcome email sent successfully. MessageId: ${info?.messageId || 'unknown'}`,
       );
     } catch (error: any) {
       this.logger.error(

@@ -196,6 +196,42 @@ export class CategoryDto {
   name: string;
 }
 
+export class SkuVariantDto {
+  @IsString()
+  SkuID: string;
+
+  @IsString()
+  SizeCode: string;
+
+  @IsString()
+  ColorCode: string;
+
+  @IsNumber()
+  price: number;
+
+  @IsString()
+  sku_name: string;
+
+  @IsString()
+  avai_status: string;
+}
+
+export class ColorDto {
+  @IsString()
+  ColorCode: string;
+
+  @IsString()
+  ColorName: string;
+
+  @IsOptional()
+  @IsString()
+  hex?: string;
+
+  @IsOptional()
+  @IsString()
+  image?: string;
+}
+
 export class ProductResponseDto {
   id: string;
   name: string;
@@ -216,9 +252,22 @@ export class ProductResponseDto {
   numReviews: number;
   createdAt: Date;
   updatedAt: Date;
+  printArea?: { top: number; left: number; width: number; height: number };
 
   @IsOptional()
   @ValidateNested()
   @Type(() => CategoryDto)
   category?: CategoryDto;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SkuVariantDto)
+  skuVariants?: SkuVariantDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ColorDto)
+  colors?: ColorDto[];
 }

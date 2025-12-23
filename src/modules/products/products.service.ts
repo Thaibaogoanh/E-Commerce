@@ -5,7 +5,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, Between } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Product } from '../../entities/product.entity';
 import { Category } from '../../entities/category.entity';
 import {
@@ -145,7 +145,7 @@ export class ProductsService {
   async findOne(id: string): Promise<ProductResponseDto> {
     const product = await this.productRepository.findOne({
       where: { id, isActive: true },
-      relations: ['category'],
+      relations: ['category', 'skuVariants', 'skuVariants.color'],
     });
 
     if (!product) {
@@ -251,13 +251,45 @@ export class ProductsService {
   }
 
   private formatProductResponse(product: Product): ProductResponseDto {
+    // Extract unique colors from SKU variants
+    const colors: any[] = [];
+    const colorMap = new Map<string, any>();
+
+    if (product.skuVariants && Array.isArray(product.skuVariants)) {
+      product.skuVariants.forEach((sku) => {
+        const colorCode = String((sku as any).ColorCode);
+        if ((sku as any).color && !colorMap.has(colorCode)) {
+          const colorItem = (sku as any).color as any;
+          colorMap.set(colorCode, {
+            ColorCode: colorCode,
+            ColorName: colorItem?.ColorName || colorCode,
+            hex: colorItem?.hex || '#000000',
+            image: colorItem?.image,
+          });
+        }
+      });
+      colors.push(...colorMap.values());
+    }
+
+    // Format SKU variants
+    const skuVariants = product.skuVariants
+      ? product.skuVariants.map((sku) => ({
+          SkuID: String((sku as any).SkuID),
+          SizeCode: String((sku as any).SizeCode),
+          ColorCode: String((sku as any).ColorCode),
+          price: Number((sku as any).price),
+          sku_name: String((sku as any).sku_name),
+          avai_status: String((sku as any).avai_status),
+        }))
+      : undefined;
+
     return {
       id: product.id,
       name: product.name,
       title: product.title,
       description: product.description,
-      price: product.price,
-      oldPrice: product.oldPrice,
+      price: Number(product.price),
+      oldPrice: product.oldPrice ? Number(product.oldPrice) : undefined,
       stock: product.stock,
       quantity: product.quantity,
       image: product.image,
@@ -266,17 +298,20 @@ export class ProductsService {
       isActive: product.isActive,
       isNew: product.isNew,
       isFeatured: product.isFeatured,
-      averageRating: product.averageRating,
-      rating: product.rating,
+      averageRating: Number(product.averageRating),
+      rating: Number(product.rating),
       numReviews: product.numReviews,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
+      printArea: (product.printArea as any) || undefined,
       category: product.category
         ? {
             id: product.category.id,
             name: product.category.name,
           }
         : undefined,
-    };
+      colors: colors.length > 0 ? colors : undefined,
+      skuVariants: skuVariants && skuVariants.length > 0 ? skuVariants : undefined,
+    } as ProductResponseDto;
   }
 }

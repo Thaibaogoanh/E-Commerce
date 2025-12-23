@@ -66,7 +66,8 @@ export class CanvasDataDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CanvasElementDto)
-  elements: CanvasElementDto[];
+  @IsOptional()
+  elements?: CanvasElementDto[];
 
   @IsOptional()
   @IsString()

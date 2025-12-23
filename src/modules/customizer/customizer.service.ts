@@ -186,6 +186,12 @@ export class CustomizerService {
 
   async calculatePrice(designData: CalculatePriceDto): Promise<number> {
     try {
+      console.log('[CalculatePrice] Request data:', {
+        productId: designData.productId,
+        colorCode: designData.colorCode,
+        sizeCode: designData.sizeCode,
+      });
+
       // Validate product exists
       const product = await this.productRepository.findOne({
         where: { id: designData.productId },
@@ -196,18 +202,50 @@ export class CustomizerService {
         );
       }
 
+      // Map hex color to ColorCode if needed
+      let colorCode = designData.colorCode;
+      if (colorCode.startsWith('#')) {
+        // Hex color provided, try to map to standard ColorCode
+        console.log(
+          '[CalculatePrice] Mapping hex color to ColorCode:',
+          colorCode,
+        );
+        // Try to find any available SKU for this product, use first color available
+        const anySku = await this.skuVariantRepository.findOne({
+          where: { productId: designData.productId },
+        });
+        if (anySku) {
+          colorCode = anySku.ColorCode;
+          console.log('[CalculatePrice] Using available color:', colorCode);
+        } else {
+          colorCode = 'BLACK'; // Final fallback
+        }
+      }
+
       // Get SKU variant price
-      const skuVariant = await this.skuVariantRepository.findOne({
+      let skuVariant = await this.skuVariantRepository.findOne({
         where: {
           productId: designData.productId,
-          ColorCode: designData.colorCode,
+          ColorCode: colorCode,
           SizeCode: designData.sizeCode,
         },
       });
 
+      // Fallback: if exact SKU not found, get any SKU for this product
+      if (!skuVariant) {
+        console.log(
+          '[CalculatePrice] SKU not found for exact color/size, trying fallback',
+        );
+        skuVariant = await this.skuVariantRepository.findOne({
+          where: { productId: designData.productId },
+        });
+      }
+
+      console.log('[CalculatePrice] SKU found:', skuVariant?.SkuID);
+
       if (!skuVariant) {
         throw new NotFoundException(
-          `SKU variant not found for product ${designData.productId} with color ${designData.colorCode} and size ${designData.sizeCode}`,
+          `No SKU variants found for product ${designData.productId}. Please create SKU variants first.`,
         );
       }
 
