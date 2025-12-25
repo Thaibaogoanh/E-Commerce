@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: sustainique-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      # Thêm các env vars khác trong Render dashboard:
+      # DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
+      # NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
+      # JWT_SECRET, CORS_ORIGIN
+
