@@ -34,8 +34,8 @@ RUN npm ci --only=production && npm cache clean --force
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
 
-# Copy email templates if they exist
-COPY --from=builder /app/src/templates ./src/templates 2>/dev/null || true
+# Copy email templates
+COPY --from=builder /app/src/templates ./src/templates
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \

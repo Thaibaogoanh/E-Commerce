@@ -1,18 +1,41 @@
+# Dependencies
 node_modules
 npm-debug.log
+yarn-error.log
+
+# Build output
 dist
+build
+
+# Environment files
 .env
 .env.local
 .env.*.local
-.git
-.gitignore
-*.md
+
+# IDE
 .vscode
 .idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Test coverage
 coverage
 .nyc_output
-*.log
-.DS_Store
-test
-*.spec.ts
 
+# Logs
+logs
+*.log
+
+# Misc
+.cache
+.temp
+.tmp
