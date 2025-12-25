@@ -1,8 +1,20 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"],
+  "exclude": [
+    "node_modules",
+    "test",
+    "dist",
+    "**/*spec.ts",
+    "reset-db.ts",
+    "run-reset.js",
+    "*.md",
+    "*.json",
+    "docker-compose.yml",
+    "Dockerfile",
+    ".dockerignore"
+  ],
   "compilerOptions": {
-    "rootDir": "./src",
-    "outDir": "./dist"
+    "rootDir": "src",
+    "outDir": "dist"
   }
 }

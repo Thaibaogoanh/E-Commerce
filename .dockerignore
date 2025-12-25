@@ -35,6 +35,23 @@ coverage
 logs
 *.log
 
+# Scripts (không cần cho production)
+reset-db.ts
+run-reset.js
+
+# Documentation
+*.md
+README.md
+API_FLOW.md
+PROJECT_SUMMARY.md
+SEQUENCE_DIAGRAM.md
+PAYMENT_SETUP.md
+
+# Docker files (không cần trong image)
+docker-compose.yml
+Dockerfile
+.dockerignore
+
 # Misc
 .cache
 .temp
