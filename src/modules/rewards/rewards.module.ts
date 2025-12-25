@@ -9,11 +9,7 @@ import { VouchersModule } from '../vouchers/vouchers.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      RewardPoint,
-      RewardCatalog,
-      User,
-    ]),
+    TypeOrmModule.forFeature([RewardPoint, RewardCatalog, User]),
     VouchersModule,
   ],
   controllers: [RewardsController],
@@ -21,4 +17,3 @@ import { VouchersModule } from '../vouchers/vouchers.module';
   exports: [RewardsService],
 })
 export class RewardsModule {}
-

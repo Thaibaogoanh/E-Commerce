@@ -11,4 +11,3 @@ import { ContactController } from './contact.controller';
   exports: [ContactService],
 })
 export class ContactModule {}
-

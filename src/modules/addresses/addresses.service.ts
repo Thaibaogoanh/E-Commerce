@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Address } from '../../entities/address.entity';
@@ -43,7 +39,10 @@ export class AddressesService {
     return address;
   }
 
-  async create(userId: string, addressData: Partial<Address>): Promise<Address> {
+  async create(
+    userId: string,
+    addressData: Partial<Address>,
+  ): Promise<Address> {
     const user = await this.userRepository.findOne({
       where: { UserID: userId },
     });
@@ -105,4 +104,3 @@ export class AddressesService {
     return this.addressRepository.save(address);
   }
 }
-

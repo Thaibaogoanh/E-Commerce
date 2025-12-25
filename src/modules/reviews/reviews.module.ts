@@ -13,5 +13,3 @@ import { User } from '../../entities/user.entity';
   exports: [ReviewsService],
 })
 export class ReviewsModule {}
-
-

@@ -80,4 +80,3 @@ export class Voucher {
   @OneToMany(() => UserVoucher, (userVoucher) => userVoucher.voucher)
   userVouchers: UserVoucher[];
 }
-

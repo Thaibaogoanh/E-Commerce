@@ -1,5 +1,4 @@
 import { AppDataSource } from '../config/data-source';
-import { seedDatabase } from '../seeders/sample-data';
 import { seedDatabaseEnhanced } from '../seeders/sample-data-enhanced';
 
 /**

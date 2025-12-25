@@ -114,5 +114,3 @@ export class ReviewStatsDto {
   pendingReviews: number;
   recentReviews: ReviewResponseDto[];
 }
-
-

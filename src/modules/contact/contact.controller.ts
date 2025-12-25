@@ -22,7 +22,10 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { ContactService } from './contact.service';
-import { CreateContactDto, UpdateContactStatusDto } from '../../dto/contact.dto';
+import {
+  CreateContactDto,
+  UpdateContactStatusDto,
+} from '../../dto/contact.dto';
 import { Contact } from '../../entities/contact.entity';
 
 @ApiTags('Contact')
@@ -89,4 +92,3 @@ export class ContactController {
     return this.contactService.updateStatus(id, dto.status, dto.response);
   }
 }
-

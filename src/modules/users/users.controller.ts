@@ -120,9 +120,8 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   async getDashboardStats(@Request() req): Promise<{
     totalOrders: number;
-    greenPoints: number;
-    savedDesigns: number;
-    recentOrders: any[];
+    totalSpent: number;
+    loyaltyPoints: number;
     treesPlanted: number;
   }> {
     return this.usersService.getDashboardStats(req.user.id);
@@ -142,9 +141,9 @@ export class UsersController {
 
   @Get('dashboard/trees-planted')
   @UseGuards(JwtAuthGuard)
-  async getTreesPlanted(@Request() req): Promise<{ trees: number }> {
+  async getTreesPlanted(
+    @Request() req,
+  ): Promise<{ count: number; goal: number }> {
     return this.usersService.getTreesPlanted(req.user.id);
   }
 }
-
-

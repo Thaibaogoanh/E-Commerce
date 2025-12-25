@@ -86,10 +86,7 @@ export class FavoritesService {
     return this.favoriteRepository.save(favorite);
   }
 
-  async removeFavorite(
-    userId: string,
-    favoriteId: string,
-  ): Promise<void> {
+  async removeFavorite(userId: string, favoriteId: string): Promise<void> {
     const favorite = await this.favoriteRepository.findOne({
       where: { id: favoriteId, userId },
     });
@@ -149,4 +146,3 @@ export class FavoritesService {
     return !!favorite;
   }
 }
-

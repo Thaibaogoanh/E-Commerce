@@ -84,7 +84,7 @@ export class CustomizerService {
       }
 
       // Calculate price
-      const price = await this.calculatePrice(designData);
+      const priceData = await this.calculatePrice(designData);
 
       // Create saved design
       const savedDesign = this.savedDesignRepository.create({
@@ -96,7 +96,7 @@ export class CustomizerService {
         quantity: designData.quantity,
         designId: designData.designId,
         userId,
-        calculatedPrice: price,
+        calculatedPrice: priceData.totalPrice,
       });
 
       const saved = await this.savedDesignRepository.save(savedDesign);
@@ -184,7 +184,17 @@ export class CustomizerService {
     }
   }
 
-  async calculatePrice(designData: CalculatePriceDto): Promise<number> {
+  async calculatePrice(designData: CalculatePriceDto): Promise<{
+    basePrice: number;
+    customizationFee: number;
+    printingFee: number;
+    totalPrice: number;
+    breakdown: {
+      base: number;
+      design: number;
+      printing: number;
+    };
+  }> {
     try {
       console.log('[CalculatePrice] Request data:', {
         productId: designData.productId,
@@ -243,19 +253,26 @@ export class CustomizerService {
 
       console.log('[CalculatePrice] SKU found:', skuVariant?.SkuID);
 
+      // If no SKU variant found, use product base price as fallback
+      let basePrice: number;
       if (!skuVariant) {
-        throw new NotFoundException(
-          `No SKU variants found for product ${designData.productId}. Please create SKU variants first.`,
+        console.warn(
+          `[CalculatePrice] No SKU variants found for product ${designData.productId}, using product base price`,
         );
+        basePrice = Number(product.price) || 0;
+      } else {
+        basePrice = Number(skuVariant.price) || Number(product.price) || 0;
       }
 
-      let basePrice = Number(skuVariant.price);
-
-      // Add design prices if any designs are used
+      // Calculate design fee based on canvas elements
+      let designFee = 0;
       if (designData.canvasData?.elements) {
         const designElements = designData.canvasData.elements.filter(
           (el: CanvasElementDto) => el.type === 'design',
         );
+
+        // Each design element adds 50000 VND fee
+        designFee = designElements.length * 50000;
 
         for (const element of designElements) {
           if (element.designId) {
@@ -263,25 +280,48 @@ export class CustomizerService {
               where: { DESIGN_ID: element.designId },
             });
             if (design) {
-              // Design price logic (could be based on license type)
-              // For now, add 0, but can be extended based on design pricing
-              basePrice += 0;
+              // Design price logic can be extended based on design pricing
+              // For now, design fee is calculated by count
+              console.log('[CalculatePrice] Design found:', design.DESIGN_ID);
             }
           }
         }
       }
 
-      // Add printing cost (could be calculated based on print area, quantity, etc.)
-      const printingCost = 50000; // Base printing cost per item
+      // Fixed printing cost per item
+      const printingFee = 30000;
 
-      const totalPrice = (basePrice + printingCost) * designData.quantity;
+      // Calculate customization fee (design + printing)
+      const customizationFee = designFee + printingFee;
+
+      // Calculate total price for quantity
+      const itemCost = basePrice + designFee + printingFee;
+      const totalPrice = itemCost * designData.quantity;
 
       // Validate calculated price
       if (totalPrice <= 0 || !isFinite(totalPrice)) {
         throw new BadRequestException('Invalid calculated price');
       }
 
-      return totalPrice;
+      console.log('[CalculatePrice] Calculation complete:', {
+        basePrice,
+        designFee,
+        printingFee,
+        customizationFee,
+        totalPrice,
+      });
+
+      return {
+        basePrice,
+        customizationFee,
+        printingFee,
+        totalPrice,
+        breakdown: {
+          base: basePrice,
+          design: designFee,
+          printing: printingFee,
+        },
+      };
     } catch (error) {
       if (
         error instanceof NotFoundException ||

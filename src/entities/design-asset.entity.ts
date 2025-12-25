@@ -42,4 +42,3 @@ export class DesignAsset {
   @JoinColumn({ name: 'designId', referencedColumnName: 'DESIGN_ID' })
   design: Design;
 }
-

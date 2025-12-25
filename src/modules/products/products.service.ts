@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -14,14 +15,18 @@ import {
   ProductQueryDto,
   ProductResponseDto,
 } from '../../dto/product.dto';
+import { Neo4jService } from '../../config/neo4j.config';
 
 @Injectable()
 export class ProductsService {
+  private logger = new Logger(ProductsService.name);
+
   constructor(
     @InjectRepository(Product)
     private productRepository: Repository<Product>,
     @InjectRepository(Category)
     private categoryRepository: Repository<Category>,
+    private neo4jService: Neo4jService,
   ) {}
 
   async create(
@@ -259,7 +264,7 @@ export class ProductsService {
       product.skuVariants.forEach((sku) => {
         const colorCode = String((sku as any).ColorCode);
         if ((sku as any).color && !colorMap.has(colorCode)) {
-          const colorItem = (sku as any).color as any;
+          const colorItem = (sku as any).color;
           colorMap.set(colorCode, {
             ColorCode: colorCode,
             ColorName: colorItem?.ColorName || colorCode,
@@ -311,7 +316,245 @@ export class ProductsService {
           }
         : undefined,
       colors: colors.length > 0 ? colors : undefined,
-      skuVariants: skuVariants && skuVariants.length > 0 ? skuVariants : undefined,
+      skuVariants:
+        skuVariants && skuVariants.length > 0 ? skuVariants : undefined,
     } as ProductResponseDto;
+  }
+
+  /**
+   * Get similar products (AI Recommendation - Category + Rating + Price)
+   */
+  async getSimilarProducts(
+    productId: string,
+    limit: number = 5,
+  ): Promise<ProductResponseDto[]> {
+    try {
+      if (!this.neo4jService.isReady()) {
+        // Fallback: get products from same category
+        const product = await this.findOne(productId);
+        if (!product.categoryId) {
+          return [];
+        }
+
+        const queryBuilder = this.productRepository
+          .createQueryBuilder('product')
+          .where('product.categoryId = :categoryId', {
+            categoryId: product.categoryId,
+          })
+          .andWhere('product.id <> :productId', { productId })
+          .andWhere('product.isActive = :isActive', { isActive: true })
+          .orderBy('product.rating', 'DESC')
+          .take(limit);
+
+        const products = await queryBuilder.getMany();
+        return products.map((p) => this.formatProductResponse(p));
+      }
+
+      // Use Neo4j for AI recommendations
+      const similarIds = await this.neo4jService.getSimilarProducts(
+        productId,
+        limit,
+      );
+      const products = await Promise.all(
+        similarIds.map((item) =>
+          this.productRepository.findOne({
+            where: { id: item.id, isActive: true },
+            relations: ['category', 'skuVariants'],
+          }),
+        ),
+      );
+
+      return products
+        .filter((p) => p !== null)
+        .map((p) => this.formatProductResponse(p));
+    } catch (error) {
+      this.logger.warn(`Error getting similar products: ${error.message}`);
+      return [];
+    }
+  }
+
+  /**
+   * Get frequently bought together products (Co-purchase Analysis)
+   */
+  async getFrequentlyBoughtTogether(
+    productId: string,
+    limit: number = 5,
+  ): Promise<ProductResponseDto[]> {
+    try {
+      if (!this.neo4jService.isReady()) {
+        return [];
+      }
+
+      const boughtTogether =
+        await this.neo4jService.getFrequentlyBoughtTogether(productId, limit);
+      const products = await Promise.all(
+        boughtTogether.map((item) =>
+          this.productRepository.findOne({
+            where: { id: item.id, isActive: true },
+            relations: ['category', 'skuVariants'],
+          }),
+        ),
+      );
+
+      return products
+        .filter((p) => p !== null)
+        .map((p) => this.formatProductResponse(p));
+    } catch (error) {
+      this.logger.warn(
+        `Error getting frequently bought together: ${error.message}`,
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Get recommended products for user (Personalized AI Recommendations)
+   */
+  async getRecommendedForUser(
+    userId: string,
+    limit: number = 5,
+  ): Promise<ProductResponseDto[]> {
+    try {
+      if (!this.neo4jService.isReady()) {
+        // Fallback: return trending blanks
+        return this.getTrendingBlanks(limit);
+      }
+
+      const recommended = await this.neo4jService.getRecommendedProducts(
+        userId,
+        limit * 2, // Get more to filter for blanks
+      );
+      
+      if (recommended.length === 0) {
+        // No recommendations, fallback to trending blanks
+        return this.getTrendingBlanks(limit);
+      }
+
+      const products = await Promise.all(
+        recommended.map((item) =>
+          this.productRepository
+            .createQueryBuilder('product')
+            .leftJoinAndSelect('product.category', 'category')
+            .leftJoinAndSelect('product.skuVariants', 'skuVariants')
+            .where('product.id = :id', { id: item.id })
+            .andWhere('product.isActive = :isActive', { isActive: true })
+            .andWhere(
+              'NOT EXISTS (SELECT 1 FROM sku_variants sv WHERE sv."productId" = product.id)',
+            )
+            .getOne(),
+        ),
+      );
+
+      const validProducts = products
+        .filter((p) => p !== null)
+        .map((p) => this.formatProductResponse(p));
+
+      // If we don't have enough blanks from recommendations, fill with trending
+      if (validProducts.length < limit) {
+        const trending = await this.getTrendingBlanks(limit - validProducts.length);
+        // Avoid duplicates
+        const existingIds = new Set(validProducts.map((p) => p.id));
+        const additional = trending.filter((p) => !existingIds.has(p.id));
+        return [...validProducts, ...additional].slice(0, limit);
+      }
+
+      return validProducts.slice(0, limit);
+    } catch (error) {
+      this.logger.warn(`Error getting user recommendations: ${error.message}`);
+      // Fallback to trending blanks on error
+      return this.getTrendingBlanks(limit);
+    }
+  }
+
+  /**
+   * Get trending blank products (fallback for recommendations)
+   */
+  private async getTrendingBlanks(limit: number): Promise<ProductResponseDto[]> {
+    const products = await this.productRepository
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.category', 'category')
+      .leftJoinAndSelect('product.skuVariants', 'skuVariants')
+      .where('product.isActive = :isActive', { isActive: true })
+      .andWhere(
+        'NOT EXISTS (SELECT 1 FROM sku_variants sv WHERE sv."productId" = product.id)',
+      )
+      .orderBy('product.rating', 'DESC')
+      .addOrderBy('product.numReviews', 'DESC')
+      .addOrderBy('product.createdAt', 'DESC')
+      .take(limit)
+      .getMany();
+    return products.map((p) => this.formatProductResponse(p));
+  }
+
+  /**
+   * Get trending products (High rating + Many purchases)
+   */
+  async getTrendingProducts(limit: number = 10): Promise<ProductResponseDto[]> {
+    try {
+      if (!this.neo4jService.isReady()) {
+        // Fallback: get top-rated products
+        const products = await this.productRepository.find({
+          where: { isActive: true },
+          relations: ['category', 'skuVariants'],
+          order: { rating: 'DESC', numReviews: 'DESC' },
+          take: limit,
+        });
+        return products.map((p) => this.formatProductResponse(p));
+      }
+
+      const trending = await this.neo4jService.getTrendingProducts(limit);
+      const products = await Promise.all(
+        trending.map((item) =>
+          this.productRepository.findOne({
+            where: { id: item.id, isActive: true },
+            relations: ['category', 'skuVariants'],
+          }),
+        ),
+      );
+
+      return products
+        .filter((p) => p !== null)
+        .map((p) => this.formatProductResponse(p));
+    } catch (error) {
+      this.logger.warn(`Error getting trending products: ${error.message}`);
+      // Fallback
+      const products = await this.productRepository.find({
+        where: { isActive: true },
+        relations: ['category', 'skuVariants'],
+        order: { rating: 'DESC' },
+        take: limit,
+      });
+      return products.map((p) => this.formatProductResponse(p));
+    }
+  }
+
+  /**
+   * Sync product to Neo4j (call after product is created/updated)
+   */
+  async syncProductToNeo4j(product: Product): Promise<void> {
+    try {
+      if (!this.neo4jService.isReady()) {
+        return;
+      }
+
+      const category = await this.categoryRepository.findOne({
+        where: { id: product.categoryId },
+      });
+
+      await this.neo4jService.createProduct(
+        product.id,
+        product.name,
+        product.categoryId,
+        Number(product.price),
+        Number(product.rating || 0),
+      );
+
+      if (category) {
+        await this.neo4jService.createCategory(category.id, category.name);
+        await this.neo4jService.linkProductToCategory(product.id, category.id);
+      }
+    } catch (error) {
+      this.logger.warn(`Error syncing product to Neo4j: ${error.message}`);
+    }
   }
 }

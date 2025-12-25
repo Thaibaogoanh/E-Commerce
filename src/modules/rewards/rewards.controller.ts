@@ -8,11 +8,19 @@ import {
   UseGuards,
   Request,
   ParseUUIDPipe,
+  Put,
+  Delete,
+  Patch,
 } from '@nestjs/common';
 import { RewardsService } from './rewards.service';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
+import { AdminGuard } from '../../guards/admin.guard';
 import { RewardPoint } from '../../entities/reward-point.entity';
 import { RewardCatalog } from '../../entities/reward-catalog.entity';
+import {
+  CreateRewardCatalogDto,
+  UpdateRewardCatalogDto,
+} from '../../dto/reward.dto';
 
 @Controller('rewards')
 @UseGuards(JwtAuthGuard)
@@ -20,11 +28,14 @@ export class RewardsController {
   constructor(private readonly rewardsService: RewardsService) {}
 
   @Get('points')
-  async getPointsBalance(@Request() req): Promise<{
-    total: number;
-    available: number;
-    pending: number;
-    expired: number;
+  async getPointsBalance(
+    @Request() req,
+  ): Promise<{
+    userId: string;
+    balance: number;
+    tier: string;
+    nextTierPoints: number;
+    pointsUntilNextTier: number;
   }> {
     return this.rewardsService.getPointsBalance(req.user.id);
   }
@@ -45,6 +56,40 @@ export class RewardsController {
     return this.rewardsService.getRewardCatalog();
   }
 
+  @Post('catalog')
+  @UseGuards(AdminGuard)
+  async createRewardCatalog(
+    @Body() createDto: CreateRewardCatalogDto,
+  ): Promise<RewardCatalog> {
+    return this.rewardsService.createRewardCatalog(createDto);
+  }
+
+  @Get('catalog/:id')
+  @UseGuards(AdminGuard)
+  async getRewardCatalogById(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<RewardCatalog> {
+    return this.rewardsService.getRewardCatalogById(id);
+  }
+
+  @Patch('catalog/:id')
+  @UseGuards(AdminGuard)
+  async updateRewardCatalog(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateDto: UpdateRewardCatalogDto,
+  ): Promise<RewardCatalog> {
+    return this.rewardsService.updateRewardCatalog(id, updateDto);
+  }
+
+  @Delete('catalog/:id')
+  @UseGuards(AdminGuard)
+  async deleteRewardCatalog(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<{ message: string }> {
+    await this.rewardsService.deleteRewardCatalog(id);
+    return { message: 'Reward catalog deleted successfully' };
+  }
+
   @Post('redeem/:rewardId')
   async redeemPoints(
     @Request() req,
@@ -53,4 +98,3 @@ export class RewardsController {
     return this.rewardsService.redeemPoints(req.user.id, rewardId);
   }
 }
-

@@ -1,14 +1,4 @@
-import {
-  IsString,
-  IsNumber,
-  IsOptional,
-  IsUUID,
-  IsArray,
-  ValidateNested,
-  Min,
-  IsNotEmpty,
-} from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsNumber, IsOptional, IsUUID, Min } from 'class-validator';
 
 export class AddToCartDto {
   @IsUUID()

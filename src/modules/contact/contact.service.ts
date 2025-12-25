@@ -20,7 +20,10 @@ export class ContactService {
     return this.contactRepository.save(contact);
   }
 
-  async findAll(page: number = 1, limit: number = 10): Promise<{
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<{
     data: Contact[];
     total: number;
     page: number;
@@ -75,4 +78,3 @@ export class ContactService {
     await this.contactRepository.delete(id);
   }
 }
-

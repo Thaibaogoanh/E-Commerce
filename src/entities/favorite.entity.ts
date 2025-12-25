@@ -47,4 +47,3 @@ export class Favorite {
   @JoinColumn({ name: 'designId', referencedColumnName: 'DESIGN_ID' })
   design: Design;
 }
-

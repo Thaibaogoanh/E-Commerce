@@ -69,7 +69,6 @@ import { EmployeesModule } from './modules/employees/employees.module';
 import { Asset } from './entities/asset.entity';
 import { AssetDisposal } from './entities/asset-disposal.entity';
 import { AssetsModule } from './modules/assets/assets.module';
-import { EmailService } from './services/email.service';
 import { PaymentModule } from './modules/payment/payment.module';
 
 @Module({

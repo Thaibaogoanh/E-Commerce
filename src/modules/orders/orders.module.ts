@@ -10,6 +10,7 @@ import { SkuVariant } from '../../entities/sku-variant.entity';
 import { Stock } from '../../entities/stock.entity';
 import { EmailService } from '../../services/email.service';
 import { InventoryModule } from '../inventory/inventory.module';
+import { Neo4jService } from '../../config/neo4j.config';
 
 @Module({
   imports: [
@@ -24,9 +25,7 @@ import { InventoryModule } from '../inventory/inventory.module';
     InventoryModule,
   ],
   controllers: [OrdersController],
-  providers: [OrdersService, EmailService],
+  providers: [OrdersService, EmailService, Neo4jService],
   exports: [OrdersService],
 })
 export class OrdersModule {}
-
-

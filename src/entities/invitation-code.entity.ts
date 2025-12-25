@@ -40,4 +40,3 @@ export class InvitationCode {
   @OneToMany(() => User, (user) => user.invitedBy)
   invitedUsers: User[];
 }
-

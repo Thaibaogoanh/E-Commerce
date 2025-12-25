@@ -1,4 +1,3 @@
-/* eslint-disable linebreak-style */
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class AddErdExtensions1700000000000 implements MigrationInterface {
@@ -274,9 +273,130 @@ export class AddErdExtensions1700000000000 implements MigrationInterface {
     await queryRunner.query(`
       CREATE INDEX IF NOT EXISTS idx_asset_disposals_asset_id ON asset_disposals("assetId");
     `);
+
+    // Add new columns to designs table (price, categoryId, stock, quantity)
+    const designsTableExists = await queryRunner.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'designs'
+      );
+    `);
+    if (designsTableExists[0].exists) {
+      // Add price column
+      await queryRunner.query(`
+        DO $$ 
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'designs' AND column_name = 'price'
+          ) THEN
+            ALTER TABLE designs ADD COLUMN "price" DECIMAL(10,2) NULL;
+          END IF;
+        END $$;
+      `);
+
+      // Add categoryId column
+      await queryRunner.query(`
+        DO $$ 
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'designs' AND column_name = 'categoryId'
+          ) THEN
+            ALTER TABLE designs ADD COLUMN "categoryId" UUID NULL;
+          END IF;
+        END $$;
+      `);
+
+      // Add stock column
+      await queryRunner.query(`
+        DO $$ 
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'designs' AND column_name = 'stock'
+          ) THEN
+            ALTER TABLE designs ADD COLUMN "stock" INTEGER NOT NULL DEFAULT 0;
+          END IF;
+        END $$;
+      `);
+
+      // Add quantity column
+      await queryRunner.query(`
+        DO $$ 
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'designs' AND column_name = 'quantity'
+          ) THEN
+            ALTER TABLE designs ADD COLUMN "quantity" INTEGER NOT NULL DEFAULT 0;
+          END IF;
+        END $$;
+      `);
+
+      // Add foreign key constraint for categoryId if categories table exists
+      const categoriesTableExists = await queryRunner.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'categories'
+        );
+      `);
+      if (categoriesTableExists[0].exists) {
+        await queryRunner.query(`
+          DO $$ 
+          BEGIN
+            IF NOT EXISTS (
+              SELECT 1 FROM pg_constraint WHERE conname = 'FK_designs_category'
+            ) THEN
+              ALTER TABLE designs 
+              ADD CONSTRAINT "FK_designs_category" 
+              FOREIGN KEY ("categoryId") 
+              REFERENCES categories("CategoryID") 
+              ON DELETE SET NULL;
+            END IF;
+          END $$;
+        `);
+      }
+
+      // Create index for categoryId
+      await queryRunner.query(`
+        CREATE INDEX IF NOT EXISTS "IDX_designs_categoryId" ON designs("categoryId");
+      `);
+    }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
+    // Drop design columns if they exist
+    const designsTableExists = await queryRunner.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'designs'
+      );
+    `);
+    if (designsTableExists[0].exists) {
+      await queryRunner.query(`
+        DROP INDEX IF EXISTS "IDX_designs_categoryId";
+      `);
+      await queryRunner.query(`
+        ALTER TABLE designs DROP CONSTRAINT IF EXISTS "FK_designs_category";
+      `);
+      await queryRunner.query(`
+        ALTER TABLE designs DROP COLUMN IF EXISTS "quantity";
+      `);
+      await queryRunner.query(`
+        ALTER TABLE designs DROP COLUMN IF EXISTS "stock";
+      `);
+      await queryRunner.query(`
+        ALTER TABLE designs DROP COLUMN IF EXISTS "categoryId";
+      `);
+      await queryRunner.query(`
+        ALTER TABLE designs DROP COLUMN IF EXISTS "price";
+      `);
+    }
+
     await queryRunner.query(`DROP TABLE IF EXISTS asset_disposals;`);
     await queryRunner.query(`DROP TABLE IF EXISTS assets;`);
     await queryRunner.query(`DROP TABLE IF EXISTS shipment_items;`);

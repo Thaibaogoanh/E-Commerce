@@ -33,7 +33,10 @@ export class AddressesController {
   }
 
   @Post()
-  async create(@Request() req, @Body() createAddressDto: Partial<Address>): Promise<Address> {
+  async create(
+    @Request() req,
+    @Body() createAddressDto: Partial<Address>,
+  ): Promise<Address> {
     return this.addressesService.create(req.user.id, createAddressDto);
   }
 
@@ -63,4 +66,3 @@ export class AddressesController {
     return { message: 'Address deleted successfully' };
   }
 }
-

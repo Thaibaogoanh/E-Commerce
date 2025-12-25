@@ -1,6 +1,6 @@
 /**
  * Payment Gateway Interface
- * 
+ *
  * Tất cả payment gateway implementations phải implement interface này
  * để đảm bảo tính nhất quán và dễ dàng thêm gateway mới
  */
@@ -38,4 +38,3 @@ export interface IPaymentGateway {
     message?: string;
   }>;
 }
-

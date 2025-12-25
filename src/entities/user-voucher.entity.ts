@@ -62,4 +62,3 @@ export class UserVoucher {
   @JoinColumn({ name: 'orderId' })
   order: Order;
 }
-

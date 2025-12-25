@@ -32,4 +32,3 @@ export class PrintMethod {
   @OneToMany(() => DesignPlacement, (placement) => placement.printMethod)
   placements: DesignPlacement[];
 }
-

@@ -10,11 +10,16 @@ import { OrderItem } from '../../entities/order-item.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Shipment, TrackEvent, Order, ShipmentItem, OrderItem]),
+    TypeOrmModule.forFeature([
+      Shipment,
+      TrackEvent,
+      Order,
+      ShipmentItem,
+      OrderItem,
+    ]),
   ],
   controllers: [ShipmentsController],
   providers: [ShipmentsService],
   exports: [ShipmentsService],
 })
 export class ShipmentsModule {}
-

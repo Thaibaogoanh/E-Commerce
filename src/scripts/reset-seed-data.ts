@@ -13,7 +13,25 @@ async function resetAndSeedDatabase() {
     await AppDataSource.initialize();
     console.log('✅ Database connected successfully\n');
 
-    // Clear all data
+    // Step 1: Run migrations first to ensure schema is up to date
+    console.log('📦 Running migrations...');
+    const migrations = await AppDataSource.runMigrations();
+    if (migrations.length > 0) {
+      console.log(`✅ Applied ${migrations.length} migration(s):`);
+      migrations.forEach((migration) => {
+        console.log(`   - ${migration.name}`);
+      });
+    } else {
+      console.log('✅ No new migrations to apply');
+    }
+    console.log('');
+
+    // Step 2: Synchronize entities (create/update tables from entities)
+    console.log('📋 Synchronizing database schema from entities...');
+    await AppDataSource.synchronize();
+    console.log('✅ Database schema synchronized\n');
+
+    // Step 3: Clear all data
     console.log('🗑️ Clearing all existing data...');
     const entities = AppDataSource.entityMetadatas;
 
@@ -23,7 +41,7 @@ async function resetAndSeedDatabase() {
     }
     console.log('✅ All data cleared\n');
 
-    // Re-seed database
+    // Step 4: Re-seed database
     console.log('🌱 Re-seeding database with enhanced sample data...');
     await seedDatabaseEnhanced(AppDataSource);
     console.log('✅ Database re-seeded successfully\n');
@@ -40,15 +58,3 @@ async function resetAndSeedDatabase() {
 }
 
 void resetAndSeedDatabase();
-
-
-
-
-
-
-
-
-
-
-
-

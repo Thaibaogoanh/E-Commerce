@@ -20,7 +20,9 @@ export class MaterialsService {
   }
 
   async update(id: string, data: Partial<Material>): Promise<Material> {
-    const material = await this.materialRepository.findOne({ where: { MatID: id } });
+    const material = await this.materialRepository.findOne({
+      where: { MatID: id },
+    });
     if (!material) {
       throw new NotFoundException('Material not found');
     }
@@ -29,7 +31,9 @@ export class MaterialsService {
   }
 
   async remove(id: string): Promise<void> {
-    const material = await this.materialRepository.findOne({ where: { MatID: id } });
+    const material = await this.materialRepository.findOne({
+      where: { MatID: id },
+    });
     if (!material) {
       throw new NotFoundException('Material not found');
     }

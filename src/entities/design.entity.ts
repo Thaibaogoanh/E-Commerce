@@ -7,13 +7,14 @@ import {
   OneToMany,
   ManyToOne,
   JoinColumn,
-  Index,
 } from 'typeorm';
+import { Transform } from 'class-transformer';
 import { DesignAsset } from './design-asset.entity';
 import { DesignPlacement } from './design-placement.entity';
 import { SkuVariant } from './sku-variant.entity';
 import { CartItem } from './cart-item.entity';
 import { Review } from './review.entity';
+import { Category } from './category.entity';
 
 export enum LicenseType {
   STANDARD = 'standard',
@@ -71,6 +72,19 @@ export class Design {
   @Column({ type: 'int', default: 0 })
   likes: number;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  @Transform(({ value }) => (value ? parseFloat(String(value)) : null))
+  price: number; // Price for ready-made products with this design
+
+  @Column({ type: 'uuid', nullable: true })
+  categoryId: string; // Category for filtering (same as Product categories)
+
+  @Column({ type: 'int', default: 0 })
+  stock: number; // Stock quantity for ready-made products
+
+  @Column({ type: 'int', default: 0 })
+  quantity: number; // Available quantity
+
   @CreateDateColumn()
   createdAt: Date;
 
@@ -92,5 +106,8 @@ export class Design {
 
   @OneToMany(() => Review, (review) => review.design)
   reviews: Review[];
-}
 
+  @ManyToOne(() => Category, { nullable: true })
+  @JoinColumn({ name: 'categoryId' })
+  category: Category;
+}

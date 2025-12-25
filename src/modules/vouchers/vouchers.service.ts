@@ -1,16 +1,18 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan } from 'typeorm';
-import { Voucher, VoucherStatus, VoucherType } from '../../entities/voucher.entity';
-import { UserVoucher, UserVoucherStatus } from '../../entities/user-voucher.entity';
+import { Repository } from 'typeorm';
+import {
+  Voucher,
+  VoucherStatus,
+  VoucherType,
+} from '../../entities/voucher.entity';
+import {
+  UserVoucher,
+  UserVoucherStatus,
+} from '../../entities/user-voucher.entity';
 import { RewardCatalog } from '../../entities/reward-catalog.entity';
 import { User } from '../../entities/user.entity';
-import { Order, OrderStatus } from '../../entities/order.entity';
+import { Order } from '../../entities/order.entity';
 
 @Injectable()
 export class VouchersService {
@@ -99,7 +101,10 @@ export class VouchersService {
       }
 
       // Check minimum order amount
-      if (voucher.minOrderAmount && orderAmount < Number(voucher.minOrderAmount)) {
+      if (
+        voucher.minOrderAmount &&
+        orderAmount < Number(voucher.minOrderAmount)
+      ) {
         return {
           valid: false,
           discount: 0,
@@ -137,6 +142,7 @@ export class VouchersService {
         }
 
         // Check if user has already used this voucher in a pending order
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const pendingUsage = await this.userVoucherRepository.findOne({
           where: {
             userId,
@@ -282,4 +288,3 @@ export class VouchersService {
     await this.voucherRepository.save(voucher);
   }
 }
-

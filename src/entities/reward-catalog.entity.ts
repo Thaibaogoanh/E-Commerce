@@ -4,7 +4,6 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  Index,
 } from 'typeorm';
 
 export enum RewardType {
@@ -55,4 +54,3 @@ export class RewardCatalog {
   @UpdateDateColumn()
   updatedAt: Date;
 }
-

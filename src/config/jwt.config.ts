@@ -12,8 +12,10 @@ export const JWT_SECRET =
 export const JWT_EXPIRES_IN = '30d';
 
 // Verify that secret is not using default in production
-if (process.env.NODE_ENV === 'production' && JWT_SECRET === 'sustainique-secret-key-default') {
+if (
+  process.env.NODE_ENV === 'production' &&
+  JWT_SECRET === 'sustainique-secret-key-default'
+) {
   console.warn('⚠️  WARNING: JWT_SECRET is using default value in production!');
   console.warn('⚠️  Please set JWT_SECRET environment variable for security!');
 }
-

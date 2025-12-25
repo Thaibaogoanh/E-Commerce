@@ -10,17 +10,10 @@ import { Stock } from '../../entities/stock.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      SkuVariant,
-      Product,
-      Size,
-      ColorOption,
-      Stock,
-    ]),
+    TypeOrmModule.forFeature([SkuVariant, Product, Size, ColorOption, Stock]),
   ],
   controllers: [SkuVariantsController],
   providers: [SkuVariantsService],
   exports: [SkuVariantsService],
 })
 export class SkuVariantsModule {}
-

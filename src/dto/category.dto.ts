@@ -4,7 +4,6 @@ import {
   IsBoolean,
   IsUUID,
   IsNotEmpty,
-  IsArray,
 } from 'class-validator';
 
 export class CreateCategoryDto {

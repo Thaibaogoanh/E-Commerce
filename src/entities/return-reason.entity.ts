@@ -26,4 +26,3 @@ export class ReturnReason {
   @OneToMany(() => ReturnRequest, (returnRequest) => returnRequest.reason)
   returnRequests: ReturnRequest[];
 }
-

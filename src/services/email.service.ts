@@ -68,7 +68,10 @@ export class EmailService {
   /**
    * Load and compile template from file
    */
-  private loadTemplate(templateName: string, extension: 'html' | 'txt' = 'html'): HandlebarsTemplateDelegate {
+  private loadTemplate(
+    templateName: string,
+    extension: 'html' | 'txt' = 'html',
+  ): HandlebarsTemplateDelegate {
     const cacheKey = `${templateName}.${extension}`;
 
     // Check cache first
@@ -77,7 +80,10 @@ export class EmailService {
     }
 
     // Load template file
-    const templatePath = path.join(this.templatesPath, `${templateName}.${extension}`);
+    const templatePath = path.join(
+      this.templatesPath,
+      `${templateName}.${extension}`,
+    );
 
     try {
       const templateContent = fs.readFileSync(templatePath, 'utf-8');
@@ -98,7 +104,11 @@ export class EmailService {
   /**
    * Render template with context
    */
-  private renderTemplate(templateName: string, context: Record<string, any>, extension: 'html' | 'txt' = 'html'): string {
+  private renderTemplate(
+    templateName: string,
+    context: Record<string, any>,
+    extension: 'html' | 'txt' = 'html',
+  ): string {
     const template = this.loadTemplate(templateName, extension);
     return template(context);
   }
@@ -118,10 +128,13 @@ export class EmailService {
       // Prepare context for template
       const context = {
         orderId: orderData.id || orderData.orderId || 'N/A',
-        orderDate: orderData.orderDate || new Date().toLocaleDateString('vi-VN'),
+        orderDate:
+          orderData.orderDate || new Date().toLocaleDateString('vi-VN'),
         shippingAddress: orderData.shippingAddress || 'N/A',
         paymentMethod: orderData.paymentMethod || 'N/A',
-        totalAmount: this.formatCurrency(orderData.totalAmount || orderData.total || 0),
+        totalAmount: this.formatCurrency(
+          orderData.totalAmount || orderData.total || 0,
+        ),
         items: (orderData.items || []).map((item: any) => ({
           productName: item.product?.name || item.productName || 'Sản phẩm',
           quantity: item.quantity || item.qty || 1,
@@ -133,11 +146,21 @@ export class EmailService {
       };
 
       // Render templates
-      const htmlContent = this.renderTemplate('order-confirmation', context, 'html');
-      const textContent = this.renderTemplate('order-confirmation', context, 'txt');
+      const htmlContent = this.renderTemplate(
+        'order-confirmation',
+        context,
+        'html',
+      );
+      const textContent = this.renderTemplate(
+        'order-confirmation',
+        context,
+        'txt',
+      );
 
       const mailOptions = {
-        from: this.configService.get<string>('SMTP_FROM') || this.configService.get<string>('SMTP_USER'),
+        from:
+          this.configService.get<string>('SMTP_FROM') ||
+          this.configService.get<string>('SMTP_USER'),
         to: email,
         subject: `Xác nhận đơn hàng #${context.orderId} - Sustainique`,
         html: htmlContent,
@@ -145,7 +168,7 @@ export class EmailService {
       };
 
       this.logger.log(`[EmailService] Sending order confirmation to ${email}`);
-      const info = await (this.transporter.sendMail(mailOptions) as Promise<any>);
+      const info = await this.transporter.sendMail(mailOptions);
       this.logger.log(
         `[EmailService] Order confirmation email sent successfully. MessageId: ${info?.messageId || 'unknown'}`,
       );
@@ -181,11 +204,21 @@ export class EmailService {
       };
 
       // Render templates
-      const htmlContent = this.renderTemplate('shipping-notification', context, 'html');
-      const textContent = this.renderTemplate('shipping-notification', context, 'txt');
+      const htmlContent = this.renderTemplate(
+        'shipping-notification',
+        context,
+        'html',
+      );
+      const textContent = this.renderTemplate(
+        'shipping-notification',
+        context,
+        'txt',
+      );
 
       const mailOptions = {
-        from: this.configService.get<string>('SMTP_FROM') || this.configService.get<string>('SMTP_USER'),
+        from:
+          this.configService.get<string>('SMTP_FROM') ||
+          this.configService.get<string>('SMTP_USER'),
         to: email,
         subject: `Đơn hàng #${context.orderId} đã được gửi đi - Sustainique`,
         html: htmlContent,
@@ -195,7 +228,7 @@ export class EmailService {
       this.logger.log(
         `[EmailService] Sending shipping notification to ${email}`,
       );
-      const info = await (this.transporter.sendMail(mailOptions) as Promise<any>);
+      const info = await this.transporter.sendMail(mailOptions);
       this.logger.log(
         `[EmailService] Shipping notification sent successfully. MessageId: ${info?.messageId || 'unknown'}`,
       );
@@ -230,10 +263,16 @@ export class EmailService {
       };
 
       // Render template
-      const htmlContent = this.renderTemplate('password-reset', context, 'html');
+      const htmlContent = this.renderTemplate(
+        'password-reset',
+        context,
+        'html',
+      );
 
       const mailOptions = {
-        from: this.configService.get<string>('SMTP_FROM') || this.configService.get<string>('SMTP_USER'),
+        from:
+          this.configService.get<string>('SMTP_FROM') ||
+          this.configService.get<string>('SMTP_USER'),
         to: email,
         subject: 'Đặt lại mật khẩu - Sustainique',
         html: htmlContent,
@@ -241,7 +280,7 @@ export class EmailService {
       };
 
       this.logger.log(`[EmailService] Sending password reset to ${email}`);
-      const info = await (this.transporter.sendMail(mailOptions) as Promise<any>);
+      const info = await this.transporter.sendMail(mailOptions);
       this.logger.log(
         `[EmailService] Password reset email sent successfully. MessageId: ${info?.messageId || 'unknown'}`,
       );
@@ -279,7 +318,9 @@ export class EmailService {
       const htmlContent = this.renderTemplate('welcome', context, 'html');
 
       const mailOptions = {
-        from: this.configService.get<string>('SMTP_FROM') || this.configService.get<string>('SMTP_USER'),
+        from:
+          this.configService.get<string>('SMTP_FROM') ||
+          this.configService.get<string>('SMTP_USER'),
         to: email,
         subject: 'Chào mừng đến với Sustainique!',
         html: htmlContent,
@@ -287,7 +328,7 @@ export class EmailService {
       };
 
       this.logger.log(`[EmailService] Sending welcome email to ${email}`);
-      const info = await (this.transporter.sendMail(mailOptions) as Promise<any>);
+      const info = await this.transporter.sendMail(mailOptions);
       this.logger.log(
         `[EmailService] Welcome email sent successfully. MessageId: ${info?.messageId || 'unknown'}`,
       );

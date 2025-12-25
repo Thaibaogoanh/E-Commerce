@@ -54,4 +54,3 @@ export class SkuVariantsController {
     return { message: 'SKU variant deleted successfully' };
   }
 }
-

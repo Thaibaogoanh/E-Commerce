@@ -10,18 +10,10 @@ import { RewardPoint } from '../../entities/reward-point.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      User,
-      Order,
-      Review,
-      SavedDesign,
-      RewardPoint,
-    ]),
+    TypeOrmModule.forFeature([User, Order, Review, SavedDesign, RewardPoint]),
   ],
   controllers: [UsersController],
   providers: [UsersService],
   exports: [UsersService],
 })
 export class UsersModule {}
-
-

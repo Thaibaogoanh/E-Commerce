@@ -132,5 +132,3 @@ export class ReviewsController {
     return this.reviewsService.adminRemove(id);
   }
 }
-
-

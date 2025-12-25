@@ -5,9 +5,9 @@ import { IPaymentGateway } from './payment-gateway.interface';
 import * as qs from 'qs';
 /**
  * VNPay Payment Gateway Implementation
- * 
+ *
  * Tài liệu: https://sandbox.vnpayment.vn/apis/
- * 
+ *
  * Để sử dụng:
  * 1. Đăng ký tài khoản tại https://sandbox.vnpayment.vn/
  * 2. Lấy TMN Code và Secret Key
@@ -50,20 +50,140 @@ export class VNPayGateway implements IPaymentGateway {
   private sanitizeOrderInfo(text: string): string {
     // Chuyển tiếng Việt thành không dấu
     const vietnameseMap: { [key: string]: string } = {
-      'à': 'a', 'á': 'a', 'ạ': 'a', 'ả': 'a', 'ã': 'a', 'â': 'a', 'ầ': 'a', 'ấ': 'a', 'ậ': 'a', 'ẩ': 'a', 'ẫ': 'a', 'ă': 'a', 'ằ': 'a', 'ắ': 'a', 'ặ': 'a', 'ẳ': 'a', 'ẵ': 'a',
-      'è': 'e', 'é': 'e', 'ẹ': 'e', 'ẻ': 'e', 'ẽ': 'e', 'ê': 'e', 'ề': 'e', 'ế': 'e', 'ệ': 'e', 'ể': 'e', 'ễ': 'e',
-      'ì': 'i', 'í': 'i', 'ị': 'i', 'ỉ': 'i', 'ĩ': 'i',
-      'ò': 'o', 'ó': 'o', 'ọ': 'o', 'ỏ': 'o', 'õ': 'o', 'ô': 'o', 'ồ': 'o', 'ố': 'o', 'ộ': 'o', 'ổ': 'o', 'ỗ': 'o', 'ơ': 'o', 'ờ': 'o', 'ớ': 'o', 'ợ': 'o', 'ở': 'o', 'ỡ': 'o',
-      'ù': 'u', 'ú': 'u', 'ụ': 'u', 'ủ': 'u', 'ũ': 'u', 'ư': 'u', 'ừ': 'u', 'ứ': 'u', 'ự': 'u', 'ử': 'u', 'ữ': 'u',
-      'ỳ': 'y', 'ý': 'y', 'ỵ': 'y', 'ỷ': 'y', 'ỹ': 'y',
-      'đ': 'd',
-      'À': 'A', 'Á': 'A', 'Ạ': 'A', 'Ả': 'A', 'Ã': 'A', 'Â': 'A', 'Ầ': 'A', 'Ấ': 'A', 'Ậ': 'A', 'Ẩ': 'A', 'Ẫ': 'A', 'Ă': 'A', 'Ằ': 'A', 'Ắ': 'A', 'Ặ': 'A', 'Ẳ': 'A', 'Ẵ': 'A',
-      'È': 'E', 'É': 'E', 'Ẹ': 'E', 'Ẻ': 'E', 'Ẽ': 'E', 'Ê': 'E', 'Ề': 'E', 'Ế': 'E', 'Ệ': 'E', 'Ể': 'E', 'Ễ': 'E',
-      'Ì': 'I', 'Í': 'I', 'Ị': 'I', 'Ỉ': 'I', 'Ĩ': 'I',
-      'Ò': 'O', 'Ó': 'O', 'Ọ': 'O', 'Ỏ': 'O', 'Õ': 'O', 'Ô': 'O', 'Ồ': 'O', 'Ố': 'O', 'Ộ': 'O', 'Ổ': 'O', 'Ỗ': 'O', 'Ơ': 'O', 'Ờ': 'O', 'Ớ': 'O', 'Ợ': 'O', 'Ở': 'O', 'Ỡ': 'O',
-      'Ù': 'U', 'Ú': 'U', 'Ụ': 'U', 'Ủ': 'U', 'Ũ': 'U', 'Ư': 'U', 'Ừ': 'U', 'Ứ': 'U', 'Ự': 'U', 'Ử': 'U', 'Ữ': 'U',
-      'Ỳ': 'Y', 'Ý': 'Y', 'Ỵ': 'Y', 'Ỷ': 'Y', 'Ỹ': 'Y',
-      'Đ': 'D',
+      à: 'a',
+      á: 'a',
+      ạ: 'a',
+      ả: 'a',
+      ã: 'a',
+      â: 'a',
+      ầ: 'a',
+      ấ: 'a',
+      ậ: 'a',
+      ẩ: 'a',
+      ẫ: 'a',
+      ă: 'a',
+      ằ: 'a',
+      ắ: 'a',
+      ặ: 'a',
+      ẳ: 'a',
+      ẵ: 'a',
+      è: 'e',
+      é: 'e',
+      ẹ: 'e',
+      ẻ: 'e',
+      ẽ: 'e',
+      ê: 'e',
+      ề: 'e',
+      ế: 'e',
+      ệ: 'e',
+      ể: 'e',
+      ễ: 'e',
+      ì: 'i',
+      í: 'i',
+      ị: 'i',
+      ỉ: 'i',
+      ĩ: 'i',
+      ò: 'o',
+      ó: 'o',
+      ọ: 'o',
+      ỏ: 'o',
+      õ: 'o',
+      ô: 'o',
+      ồ: 'o',
+      ố: 'o',
+      ộ: 'o',
+      ổ: 'o',
+      ỗ: 'o',
+      ơ: 'o',
+      ờ: 'o',
+      ớ: 'o',
+      ợ: 'o',
+      ở: 'o',
+      ỡ: 'o',
+      ù: 'u',
+      ú: 'u',
+      ụ: 'u',
+      ủ: 'u',
+      ũ: 'u',
+      ư: 'u',
+      ừ: 'u',
+      ứ: 'u',
+      ự: 'u',
+      ử: 'u',
+      ữ: 'u',
+      ỳ: 'y',
+      ý: 'y',
+      ỵ: 'y',
+      ỷ: 'y',
+      ỹ: 'y',
+      đ: 'd',
+      À: 'A',
+      Á: 'A',
+      Ạ: 'A',
+      Ả: 'A',
+      Ã: 'A',
+      Â: 'A',
+      Ầ: 'A',
+      Ấ: 'A',
+      Ậ: 'A',
+      Ẩ: 'A',
+      Ẫ: 'A',
+      Ă: 'A',
+      Ằ: 'A',
+      Ắ: 'A',
+      Ặ: 'A',
+      Ẳ: 'A',
+      Ẵ: 'A',
+      È: 'E',
+      É: 'E',
+      Ẹ: 'E',
+      Ẻ: 'E',
+      Ẽ: 'E',
+      Ê: 'E',
+      Ề: 'E',
+      Ế: 'E',
+      Ệ: 'E',
+      Ể: 'E',
+      Ễ: 'E',
+      Ì: 'I',
+      Í: 'I',
+      Ị: 'I',
+      Ỉ: 'I',
+      Ĩ: 'I',
+      Ò: 'O',
+      Ó: 'O',
+      Ọ: 'O',
+      Ỏ: 'O',
+      Õ: 'O',
+      Ô: 'O',
+      Ồ: 'O',
+      Ố: 'O',
+      Ộ: 'O',
+      Ổ: 'O',
+      Ỗ: 'O',
+      Ơ: 'O',
+      Ờ: 'O',
+      Ớ: 'O',
+      Ợ: 'O',
+      Ở: 'O',
+      Ỡ: 'O',
+      Ù: 'U',
+      Ú: 'U',
+      Ụ: 'U',
+      Ủ: 'U',
+      Ũ: 'U',
+      Ư: 'U',
+      Ừ: 'U',
+      Ứ: 'U',
+      Ự: 'U',
+      Ử: 'U',
+      Ữ: 'U',
+      Ỳ: 'Y',
+      Ý: 'Y',
+      Ỵ: 'Y',
+      Ỷ: 'Y',
+      Ỹ: 'Y',
+      Đ: 'D',
     };
 
     let result = text;
@@ -87,16 +207,16 @@ export class VNPayGateway implements IPaymentGateway {
     return `${cleanId}${timestamp}`;
   }
 
-  async initiatePayment(params: {
+  initiatePayment(params: {
     amount: number;
     orderId: string;
     description: string;
     returnUrl?: string;
-  }) {
+  }): Promise<{ paymentUrl: string; transactionId: string }> {
     const date = new Date();
     const createDate = this.formatDate(date);
     const txnRef = this.generateTxnRef(params.orderId);
-  
+
     const vnp_Params: any = {
       vnp_Version: '2.1.0',
       vnp_Command: 'pay',
@@ -111,46 +231,50 @@ export class VNPayGateway implements IPaymentGateway {
       vnp_IpAddr: '113.160.92.1', // Dùng IP thực hoặc IP tĩnh VN
       vnp_CreateDate: createDate,
     };
-  
+
     // 1. Sắp xếp params
     const sortedParams = this.sortObject(vnp_Params);
-  
+
     // 2. Tạo chuỗi query chuẩn để băm (SỬ DỤNG URLSearchParams)
     const signData = new URLSearchParams(sortedParams).toString();
-  
+
     // 3. Tạo Secure Hash
     const hmac = crypto.createHmac('sha512', this.secretKey);
-    const secureHash = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
-  
+    const secureHash = hmac
+      .update(Buffer.from(signData, 'utf-8'))
+      .digest('hex');
+
     // 4. Tạo URL thanh toán cuối cùng
     const finalUrl = new URLSearchParams(sortedParams);
     finalUrl.append('vnp_SecureHash', secureHash);
-  
+
     const paymentUrl = `${this.apiUrl}?${finalUrl.toString()}`;
-  
+
     this.logger.debug(`VNPay SignData: ${signData}`);
     this.logger.debug(`VNPay URL: ${paymentUrl}`);
-  
-    return { paymentUrl, transactionId: txnRef };
+
+    return Promise.resolve({ paymentUrl, transactionId: txnRef });
   }
 
   /**
    * Build payment URL với params được encode đúng cách theo chuẩn VNPay
    */
 
-  private buildPaymentUrl(sortedParams: { [key: string]: string }, secureHash: string): string {
+  private buildPaymentUrl(
+    sortedParams: { [key: string]: string },
+    secureHash: string,
+  ): string {
     const params = {
-        ...sortedParams,
-        vnp_SecureHash: secureHash,
+      ...sortedParams,
+      vnp_SecureHash: secureHash,
     };
 
     // Phải dùng cùng một chuẩn encode (RFC1738) để tạo query string cuối cùng
     const queryString = qs.stringify(params, { encode: true });
     return `${this.apiUrl}?${queryString}`;
-}
+  }
 
-
-  async verifyPayment(params: {
+  verifyPayment(params: {
     transactionId: string;
     amount: number;
     vnp_SecureHash?: string;
@@ -166,7 +290,13 @@ export class VNPayGateway implements IPaymentGateway {
       throw new Error('VNPay secret key not configured');
     }
 
-    const { vnp_SecureHash, vnp_SecureHashType, vnp_ResponseCode, ...otherParams } = params;
+    const {
+      vnp_SecureHash,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      vnp_SecureHashType,
+      vnp_ResponseCode,
+      ...otherParams
+    } = params;
 
     // Decode các giá trị nếu cần (VNPay callback có thể trả về URL-encoded values)
     const decodedParams: { [key: string]: any } = {};
@@ -196,12 +326,12 @@ export class VNPayGateway implements IPaymentGateway {
       this.logger.error(
         `VNPay signature verification failed for transaction: ${params.transactionId}`,
       );
-      return {
+      return Promise.resolve({
         success: false,
         transactionId: params.transactionId,
         amount: params.amount / 100, // Convert từ xu về VND
         message: 'Invalid signature',
-      };
+      });
     }
 
     // Kiểm tra response code từ VNPay
@@ -210,12 +340,12 @@ export class VNPayGateway implements IPaymentGateway {
       this.logger.log(
         `VNPay payment verified successfully for transaction: ${params.transactionId}`,
       );
-      return {
+      return Promise.resolve({
         success: true,
         transactionId: params.transactionId,
         amount: params.amount / 100, // Convert từ xu về VND
         message: 'Payment successful',
-      };
+      });
     }
 
     // Các mã lỗi khác
@@ -242,12 +372,12 @@ export class VNPayGateway implements IPaymentGateway {
       `VNPay payment failed for transaction: ${params.transactionId}, code: ${vnp_ResponseCode}`,
     );
 
-    return {
+    return Promise.resolve({
       success: false,
       transactionId: params.transactionId,
       amount: params.amount / 100,
       message: errorMessage,
-    };
+    });
   }
 
   /**
@@ -256,9 +386,11 @@ export class VNPayGateway implements IPaymentGateway {
   private sortObject(obj: any) {
     const sorted = {};
     const keys = Object.keys(obj)
-      .filter(key => key.startsWith('vnp_') && obj[key] !== '' && obj[key] !== null)
+      .filter(
+        (key) => key.startsWith('vnp_') && obj[key] !== '' && obj[key] !== null,
+      )
       .sort();
-    
+
     for (const key of keys) {
       sorted[key] = obj[key].toString();
     }
@@ -268,17 +400,17 @@ export class VNPayGateway implements IPaymentGateway {
    * Tạo secure hash theo chuẩn VNPay (giống official demo)
    * Tạo chuỗi KHÔNG encode - theo đúng chuẩn VNPay v2.1.0
    */
-private createSecureHash(sortedParams: { [key: string]: string }): string {
+  private createSecureHash(sortedParams: { [key: string]: string }): string {
     // Tự nối chuỗi, TUYỆT ĐỐI KHÔNG dùng thư viện encode ở bước này
     const signData = Object.keys(sortedParams)
-        .map((key) => `${key}=${sortedParams[key]}`)
-        .join('&');
+      .map((key) => `${key}=${sortedParams[key]}`)
+      .join('&');
 
     this.logger.debug(`VNPay signData (MANUAL RAW): ${signData}`);
 
     const hmac = crypto.createHmac('sha512', this.secretKey);
     return hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
-}
+  }
   /**
    * Format date theo chuẩn VNPay: yyyyMMddHHmmss
    * Sử dụng local time của server (phải đảm bảo server ở UTC+7 hoặc timezone Vietnam)
@@ -294,4 +426,3 @@ private createSecureHash(sortedParams: { [key: string]: string }): string {
     return `${year}${month}${day}${hours}${minutes}${seconds}`;
   }
 }
-

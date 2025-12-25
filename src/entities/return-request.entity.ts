@@ -65,4 +65,3 @@ export class ReturnRequest {
   @JoinColumn({ name: 'reasonCode', referencedColumnName: 'Reason_code' })
   reason: ReturnReason;
 }
-

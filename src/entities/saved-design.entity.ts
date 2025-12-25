@@ -85,4 +85,3 @@ export class SavedDesign {
   @JoinColumn({ name: 'designId', referencedColumnName: 'DESIGN_ID' })
   design: Design;
 }
-

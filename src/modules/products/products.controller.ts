@@ -8,6 +8,7 @@ import {
   Delete,
   Query,
   UseGuards,
+  Request,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import {
@@ -62,21 +63,82 @@ export class ProductsController {
     return this.productsService.findAll(queryDto);
   }
 
-  @Get('featured')
-  async getFeaturedProducts(
+  // AI Recommendation endpoints - MUST be before @Get(':id') to avoid route conflicts
+  @Get('ai/trending')
+  @ApiOperation({
+    summary: 'Get trending products (AI - High rating + Many purchases)',
+  })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async getTrendingProducts(
     @Query('limit') limit?: number,
   ): Promise<ProductResponseDto[]> {
-    return this.productsService.getFeaturedProducts(limit);
+    const limitInt = limit ? Math.floor(Number(limit)) || 10 : 10;
+    return this.productsService.getTrendingProducts(limitInt);
   }
 
-  @Get('new')
-  async getNewProducts(
+  @Get('ai/recommended')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get recommended products for user (AI - Personalized)',
+  })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async getRecommendedForUser(
+    @Request() req,
     @Query('limit') limit?: number,
   ): Promise<ProductResponseDto[]> {
-    return this.productsService.getNewProducts(limit);
+    // Extract userId from JWT token
+    const userId = req?.user?.id || '';
+    const limitInt = limit ? Math.floor(Number(limit)) || 5 : 5;
+    return this.productsService.getRecommendedForUser(userId, limitInt);
   }
 
+  @Get('ai/similar/:id')
+  @ApiOperation({
+    summary:
+      'Get similar products (AI - Same category + Similar price + High rating)',
+  })
+  @ApiParam({ name: 'id', type: 'string', description: 'Product ID' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async getSimilarProducts(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('limit') limit?: number,
+  ): Promise<ProductResponseDto[]> {
+    const limitInt = limit ? Math.floor(Number(limit)) || 5 : 5;
+    return this.productsService.getSimilarProducts(id, limitInt);
+  }
+
+  @Get('ai/frequently-bought/:id')
+  @ApiOperation({
+    summary: 'Get frequently bought together (AI - Co-purchase analysis)',
+  })
+  @ApiParam({ name: 'id', type: 'string', description: 'Product ID' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async getFrequentlyBoughtTogether(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('limit') limit?: number,
+  ): Promise<ProductResponseDto[]> {
+    const limitInt = limit ? Math.floor(Number(limit)) || 5 : 5;
+    return this.productsService.getFrequentlyBoughtTogether(id, limitInt);
+  }
+
+  // Specific product endpoints - MUST be before @Get(':id')
   @Get('blanks')
+  @ApiOperation({
+    summary: 'Get all blank products (products without designs)',
+    description: 'Returns paginated list of blank products that can be customized',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Blank products retrieved successfully',
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'categoryId', required: false, type: String })
+  @ApiQuery({ name: 'minPrice', required: false, type: Number })
+  @ApiQuery({ name: 'maxPrice', required: false, type: Number })
+  @ApiQuery({ name: 'sortBy', required: false, type: String })
+  @ApiQuery({ name: 'sortOrder', required: false, type: String })
   async getBlanks(@Query() queryDto: ProductQueryDto): Promise<{
     products: ProductResponseDto[];
     total: number;
@@ -100,6 +162,21 @@ export class ProductsController {
     return this.productsService.findAll({ ...queryDto, readyMade: true });
   }
 
+  @Get('featured')
+  async getFeaturedProducts(
+    @Query('limit') limit?: number,
+  ): Promise<ProductResponseDto[]> {
+    return this.productsService.getFeaturedProducts(limit);
+  }
+
+  @Get('new')
+  async getNewProducts(
+    @Query('limit') limit?: number,
+  ): Promise<ProductResponseDto[]> {
+    return this.productsService.getNewProducts(limit);
+  }
+
+  // Dynamic route - MUST be last to avoid conflicts
   @Get(':id')
   async findOne(
     @Param('id', ParseUUIDPipe) id: string,
@@ -133,5 +210,3 @@ export class ProductsController {
     return this.productsService.updateStock(id, quantity);
   }
 }
-
-

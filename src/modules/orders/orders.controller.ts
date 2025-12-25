@@ -5,7 +5,6 @@ import {
   Body,
   Patch,
   Param,
-  Delete,
   Query,
   UseGuards,
   Request,
@@ -106,7 +105,10 @@ export class OrdersController {
 
   @Get(':id/tracking')
   @UseGuards(JwtAuthGuard)
-  async getTracking(@Param('id', ParseUUIDPipe) id: string) {
+  getTracking(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     // This will be handled by ShipmentsController, but we can add a redirect or call it here
     return { message: 'Use GET /api/shipments/order/:orderId for tracking' };
   }

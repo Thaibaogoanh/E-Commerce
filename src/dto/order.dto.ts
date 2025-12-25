@@ -168,5 +168,3 @@ export class OrderStatsDto {
   totalRevenue: number;
   averageOrderValue: number;
 }
-
-

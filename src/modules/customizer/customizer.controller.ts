@@ -62,8 +62,17 @@ export class CustomizerController {
   @HttpCode(HttpStatus.OK)
   async calculatePrice(
     @Body() designData: CalculatePriceDto,
-  ): Promise<{ price: number }> {
-    const price = await this.customizerService.calculatePrice(designData);
-    return { price };
+  ): Promise<{
+    basePrice: number;
+    customizationFee: number;
+    printingFee: number;
+    totalPrice: number;
+    breakdown: {
+      base: number;
+      design: number;
+      printing: number;
+    };
+  }> {
+    return this.customizerService.calculatePrice(designData);
   }
 }

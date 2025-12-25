@@ -23,4 +23,3 @@ import { Order } from '../../entities/order.entity';
   exports: [VouchersService],
 })
 export class VouchersModule {}
-

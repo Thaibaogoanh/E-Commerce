@@ -18,7 +18,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       secretOrKey: JWT_SECRET,
     });
 
-    console.log('[JwtStrategy] Initialized with secret:', JWT_SECRET.substring(0, 10) + '...');
+    console.log(
+      '[JwtStrategy] Initialized with secret:',
+      JWT_SECRET.substring(0, 10) + '...',
+    );
   }
 
   async validate(payload: any) {
@@ -28,7 +31,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       where: { UserID: payload.sub, is_active: true },
     });
 
-    console.log('[JwtStrategy] User found:', user ? `${user.email}` : 'NOT FOUND');
+    console.log(
+      '[JwtStrategy] User found:',
+      user ? `${user.email}` : 'NOT FOUND',
+    );
 
     if (!user) {
       throw new UnauthorizedException('User not found or inactive');

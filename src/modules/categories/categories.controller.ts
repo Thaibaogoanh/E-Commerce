@@ -72,5 +72,3 @@ export class CategoriesController {
     return this.categoriesService.remove(id);
   }
 }
-
-

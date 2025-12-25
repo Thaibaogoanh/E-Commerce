@@ -23,6 +23,7 @@ import {
 } from '../../dto/order.dto';
 import { EmailService } from '../../services/email.service';
 import { InventoryService } from '../inventory/inventory.service';
+import { Neo4jService } from '../../config/neo4j.config';
 
 @Injectable()
 export class OrdersService {
@@ -44,6 +45,7 @@ export class OrdersService {
     private dataSource: DataSource,
     private emailService: EmailService,
     private inventoryService: InventoryService,
+    private neo4jService: Neo4jService,
   ) {}
 
   async create(
@@ -90,7 +92,6 @@ export class OrdersService {
 
       // Find SKU variant - REQUIRED since OrderItem.skuId is NOT nullable
       let skuVariant: SkuVariant | null = null;
-      let skuId: string;
 
       // Try to find SKU variant by color and size if provided
       if (item.colorCode && item.sizeCode) {
@@ -110,16 +111,52 @@ export class OrdersService {
         });
       }
 
-      // If still no SKU found, product cannot be ordered
+      // If still no SKU found, create a default SKU variant for custom designs
+      // This allows products with custom designs to be ordered even without pre-configured SKUs
+      if (!skuVariant) {
+        this.logger.warn(
+          `No SKU variant found for product ${product.name} (${item.productId}). Creating default SKU for custom design order.`,
+        );
+        
+        // Create a default SKU variant in DB for this product/color/size combination
+        const newSkuVariant = this.skuVariantRepository.create({
+          productId: item.productId,
+          SizeCode: item.sizeCode || 'M',
+          ColorCode: item.colorCode || 'BLACK',
+          price: item.price || product.price || 0,
+          weight_grams: 0,
+          base_cost: 0,
+          sku_name: `${product.name} - ${item.sizeCode || 'M'} - ${item.colorCode || 'BLACK'}`,
+          avai_status: 'available',
+          currency: 'VND',
+          designId: item.designId || undefined, // Use undefined instead of null
+        });
+        
+        const savedSkuVariant = await this.skuVariantRepository.save(newSkuVariant);
+        // save() can return SkuVariant or SkuVariant[], handle both cases
+        const saved = Array.isArray(savedSkuVariant) ? savedSkuVariant[0] : savedSkuVariant;
+        if (!saved) {
+          throw new BadRequestException(
+            `Failed to create SKU variant for product ${product.name}.`,
+          );
+        }
+        // Assign to skuVariant after null check
+        skuVariant = saved;
+        // Now TypeScript knows skuVariant is not null
+        this.logger.log(`Created default SKU variant ${saved.SkuID} for product ${product.name}`);
+      }
+
+      // At this point, skuVariant should never be null, but TypeScript doesn't know that
       if (!skuVariant) {
         throw new BadRequestException(
-          `Product ${product.name} has no SKU variants available for ordering.`,
+          `Failed to create or find SKU variant for product ${product.name}.`,
         );
       }
 
-      skuId = skuVariant.SkuID;
+      const skuId = skuVariant.SkuID;
 
       // Check stock - try SKU variant stock first, fallback to product stock
+      // For custom designs, be more lenient with stock checks
       try {
         const stock = await this.inventoryService.getBySku(skuId);
         const availableStock = stock.qty_on_hand - stock.qty_reserved;
@@ -132,15 +169,28 @@ export class OrdersService {
       } catch (error: any) {
         // If stock not found for SKU, fallback to product stock
         if (error instanceof NotFoundException) {
-          if (product.stock < item.quantity) {
+          // For custom designs or when stock not found, use product stock or allow order
+          const productStock = product.stock || 999; // Default to high stock if not set
+          if (productStock < item.quantity && !item.designId && !item.customDesignData) {
             throw new BadRequestException(
-              `Insufficient stock for product ${product.name}. Available: ${product.stock}`,
+              `Insufficient stock for product ${product.name}. Available: ${productStock}`,
             );
           }
+          // For custom designs, allow order even if stock is not tracked
+          this.logger.warn(
+            `Stock not found for SKU ${skuId}, but allowing order for custom design product ${product.name}`,
+          );
         } else if (error instanceof BadRequestException) {
           throw error; // Re-throw our own stock errors
         } else {
-          throw error;
+          // For other errors, log but allow order for custom designs
+          if (item.designId || item.customDesignData) {
+            this.logger.warn(
+              `Stock check error for custom design: ${error.message}. Allowing order to proceed.`,
+            );
+          } else {
+            throw error;
+          }
         }
       }
 
@@ -234,6 +284,62 @@ export class OrdersService {
       }
 
       await queryRunner.commitTransaction();
+
+      // Create Neo4j purchase relationships (non-blocking)
+      if (this.neo4jService.isReady()) {
+        try {
+          // Create purchase relationships for each product
+          for (const item of orderItems) {
+            await this.neo4jService.createPurchaseRelationship(
+              userId,
+              item.productId,
+              item.qty,
+              0, // rating will be updated when user reviews
+            );
+
+            // Create product nodes if they don't exist (only for blanks)
+            const product = await this.productRepository
+              .createQueryBuilder('product')
+              .leftJoinAndSelect('product.category', 'category')
+              .where('product.id = :id', { id: item.productId })
+              .andWhere('product.isActive = :isActive', { isActive: true })
+              .andWhere(
+                'NOT EXISTS (SELECT 1 FROM sku_variants sv WHERE sv."productId" = product.id)',
+              )
+              .getOne();
+            if (product) {
+              await this.neo4jService.createProduct(
+                product.id,
+                product.name,
+                product.category?.id || '',
+                product.price,
+                product.rating || 0,
+              );
+              if (product.category?.id) {
+                await this.neo4jService.linkProductToCategory(
+                  product.id,
+                  product.category.id,
+                );
+              }
+            }
+          }
+
+          // Create co-purchase relationships (products bought together in same order)
+          for (let i = 0; i < orderItems.length; i++) {
+            for (let j = i + 1; j < orderItems.length; j++) {
+              await this.neo4jService.createCoPurchaseRelationship(
+                orderItems[i].productId,
+                orderItems[j].productId,
+              );
+            }
+          }
+        } catch (error) {
+          this.logger.warn(
+            `Failed to create Neo4j relationships: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+          // Don't throw - Neo4j is not critical for order creation
+        }
+      }
 
       // Get user email for order confirmation
       const userEmail = user.email;
@@ -512,22 +618,26 @@ export class OrdersService {
       totalRevenue,
     ] = await Promise.all([
       this.orderRepository.count(),
-      this.orderRepository.count({ where: { status: OrderStatus.PENDING } }),
-      this.orderRepository.count({ where: { status: OrderStatus.PROCESSING } }),
-      this.orderRepository.count({ where: { status: OrderStatus.SHIPPED } }),
-      this.orderRepository.count({ where: { status: OrderStatus.DELIVERED } }),
-      this.orderRepository.count({ where: { status: OrderStatus.CANCELLED } }),
+      this.orderRepository.count({ where: { Status: OrderStatus.PENDING } }),
+      this.orderRepository.count({ where: { Status: OrderStatus.PROCESSING } }),
+      this.orderRepository.count({ where: { Status: OrderStatus.SHIPPED } }),
+      this.orderRepository.count({ where: { Status: OrderStatus.DELIVERED } }),
+      this.orderRepository.count({ where: { Status: OrderStatus.CANCELLED } }),
       this.orderRepository
         .createQueryBuilder('order')
-        .select('SUM(order.totalAmount)', 'total')
+        .select('SUM(order.Total)', 'total')
         .where('order.paymentStatus = :status', {
           status: PaymentStatus.COMPLETED,
         })
         .getRawOne(),
     ]);
 
+    const revenueValue = totalRevenue?.total 
+      ? (typeof totalRevenue.total === 'string' ? parseFloat(totalRevenue.total) : Number(totalRevenue.total) || 0)
+      : 0;
+    
     const averageOrderValue =
-      totalOrders > 0 ? totalRevenue.total / totalOrders : 0;
+      totalOrders > 0 ? revenueValue / totalOrders : 0;
 
     return {
       totalOrders,
@@ -536,7 +646,7 @@ export class OrdersService {
       shippedOrders,
       deliveredOrders,
       cancelledOrders,
-      totalRevenue: totalRevenue.total || 0,
+      totalRevenue: revenueValue,
       averageOrderValue,
     };
   }
@@ -561,11 +671,16 @@ export class OrdersService {
   }
 
   private formatOrderResponse(order: Order): OrderResponseDto {
+    // Parse Total from decimal string to number
+    const totalAmount = typeof order.totalAmount === 'string' 
+      ? parseFloat(order.totalAmount) 
+      : (order.totalAmount || 0);
+    
     return {
       id: order.id,
       userId: order.userId,
       status: order.status,
-      totalAmount: order.totalAmount,
+      totalAmount: totalAmount,
       shippingAddress: order.shippingAddress,
       paymentMethod: order.paymentMethod,
       paymentStatus: order.paymentStatus,

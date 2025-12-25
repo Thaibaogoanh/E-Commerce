@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PaymentMethod } from '../../entities/payment-method.entity';
@@ -108,4 +104,3 @@ export class PaymentMethodsService {
     return this.paymentMethodRepository.save(method);
   }
 }
-

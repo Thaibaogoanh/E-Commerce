@@ -77,4 +77,3 @@ export class PaymentMethod {
   @OneToMany(() => Payment, (payment) => payment.paymentMethod)
   payments: Payment[];
 }
-

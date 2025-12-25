@@ -82,4 +82,3 @@ export class SkuVariant {
   @JoinColumn({ name: 'designId' })
   design: Design;
 }
-

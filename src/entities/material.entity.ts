@@ -6,7 +6,6 @@ import {
   UpdateDateColumn,
   ManyToMany,
   JoinTable,
-  Index,
 } from 'typeorm';
 import { Product } from './product.entity';
 
@@ -51,4 +50,3 @@ export class Material {
   })
   products: Product[];
 }
-

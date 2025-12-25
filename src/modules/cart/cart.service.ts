@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
@@ -17,6 +16,7 @@ import {
   CartSummaryDto,
 } from '../../dto/cart.dto';
 import { VouchersService } from '../vouchers/vouchers.service';
+import { Neo4jService } from '../../config/neo4j.config';
 
 @Injectable()
 export class CartService {
@@ -31,6 +31,7 @@ export class CartService {
     private userRepository: Repository<User>,
     private dataSource: DataSource,
     private vouchersService: VouchersService,
+    private neo4jService: Neo4jService,
   ) {}
 
   async getOrCreateCart(userId: string): Promise<Cart> {
@@ -71,7 +72,14 @@ export class CartService {
     userId: string,
     addToCartDto: AddToCartDto,
   ): Promise<CartResponseDto> {
-    const { productId, quantity, colorCode, sizeCode, customDesignData, designId } = addToCartDto;
+    const {
+      productId,
+      quantity,
+      colorCode,
+      sizeCode,
+      customDesignData,
+      designId,
+    } = addToCartDto;
 
     // Verify product exists and is active
     const product = await this.productRepository.findOne({
@@ -114,7 +122,7 @@ export class CartService {
 
         existingCartItem.qty = newQuantity;
         existingCartItem.unit_price_snapshot = product.price;
-        
+
         // Update custom design data if provided
         if (customDesignData) {
           existingCartItem.customDesignData = customDesignData;
@@ -150,6 +158,46 @@ export class CartService {
       await this.updateCartTotals(queryRunner, cart.id);
 
       await queryRunner.commitTransaction();
+
+      // Create Neo4j interest/viewed relationships (non-blocking)
+      if (this.neo4jService.isReady()) {
+        try {
+          // Create viewed/interested relationship when adding to cart
+          await this.neo4jService.createViewedRelationship(
+            userId,
+            productId,
+          );
+
+          // Create product node if it doesn't exist (only for blanks)
+          const product = await this.productRepository
+            .createQueryBuilder('product')
+            .leftJoinAndSelect('product.category', 'category')
+            .where('product.id = :id', { id: productId })
+            .andWhere('product.isActive = :isActive', { isActive: true })
+            .andWhere(
+              'NOT EXISTS (SELECT 1 FROM sku_variants sv WHERE sv."productId" = product.id)',
+            )
+            .getOne();
+          if (product) {
+            await this.neo4jService.createProduct(
+              product.id,
+              product.name,
+              product.category?.id || '',
+              product.price,
+              product.rating || 0,
+            );
+            if (product.category?.id) {
+              await this.neo4jService.linkProductToCategory(
+                product.id,
+                product.category.id,
+              );
+            }
+          }
+        } catch (error) {
+          // Don't throw - Neo4j is not critical for cart operations
+          console.warn('Failed to create Neo4j viewed relationship:', error);
+        }
+      }
 
       // Return updated cart
       const updatedCart = await this.cartRepository.findOne({
@@ -421,7 +469,11 @@ export class CartService {
             .filter((item) => item.product) // Filter out items without products
             .map((item) => {
               // Ensure price is always set from unit_price_snapshot or product price
-              const itemPrice = item.price || item.unit_price_snapshot || item.product?.price || 0;
+              const itemPrice =
+                item.price ||
+                item.unit_price_snapshot ||
+                item.product?.price ||
+                0;
               return {
                 id: item.id,
                 productId: item.productId,

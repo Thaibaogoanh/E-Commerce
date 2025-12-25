@@ -6,7 +6,6 @@ import {
   UpdateDateColumn,
   OneToMany,
   ManyToMany,
-  Index,
 } from 'typeorm';
 import { SkuVariant } from './sku-variant.entity';
 import { CartItem } from './cart-item.entity';
@@ -42,4 +41,3 @@ export class ColorOption {
   @ManyToMany(() => Employee, (employee) => employee.managedColors)
   managers: Employee[];
 }
-

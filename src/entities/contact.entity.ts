@@ -55,4 +55,3 @@ export class Contact {
   @UpdateDateColumn()
   updatedAt: Date;
 }
-

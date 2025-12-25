@@ -165,8 +165,30 @@ export class UsersService {
       }
     }
 
-    // Update user
-    Object.assign(user, updateUserDto);
+    // Update user - only update fields that are provided
+    if (updateUserDto.name !== undefined) {
+      user.name = updateUserDto.name;
+    }
+    if (updateUserDto.email !== undefined) {
+      user.email = updateUserDto.email;
+    }
+    if (updateUserDto.phone !== undefined) {
+      user.phone = updateUserDto.phone;
+    }
+    if (updateUserDto.address !== undefined) {
+      // Note: address is not a direct field, it's computed from addresses relation
+      // This might need special handling if you want to update address
+    }
+    if (updateUserDto.image !== undefined) {
+      user.image = updateUserDto.image;
+    }
+    if (updateUserDto.role !== undefined) {
+      user.role = updateUserDto.role;
+    }
+    if (updateUserDto.isActive !== undefined) {
+      user.isActive = updateUserDto.isActive;
+    }
+    
     const savedUser = await this.userRepository.save(user);
 
     return this.formatUserResponseWithStats(savedUser);
@@ -299,20 +321,23 @@ export class UsersService {
   private async getTopCustomers(): Promise<UserResponseDto[]> {
     const topCustomers = await this.dataSource
       .createQueryBuilder()
-      .select('u.id', 'userId')
-      .addSelect('SUM(o.totalAmount)', 'totalSpent')
+      .select('u."UserID"', 'userId')
+      .addSelect('SUM(o."Total")', 'totalSpent')
       .from('users', 'u')
-      .innerJoin('orders', 'o', 'o.userId = u.id')
-      .where('o.paymentStatus = :status', { status: 'completed' })
+      .innerJoin('orders', 'o', 'o."userId" = u."UserID"')
+      .where('o."paymentStatus" = :status', { status: 'completed' })
       .andWhere('u.role = :role', { role: UserRole.USER })
-      .groupBy('u.id')
-      .orderBy('totalSpent', 'DESC')
+      .groupBy('u."UserID"')
+      .orderBy('SUM(o."Total")', 'DESC')
       .limit(5)
       .getRawMany();
 
     const userIds = topCustomers.map((customer) => customer.userId);
+    if (userIds.length === 0) {
+      return [];
+    }
     const users = await this.userRepository.find({
-      where: { id: In(userIds) },
+      where: { UserID: In(userIds) },
     });
 
     return Promise.all(
@@ -363,7 +388,7 @@ export class UsersService {
       ...this.formatUserResponse(user),
       stats: {
         totalOrders,
-        totalSpent: parseFloat(totalSpent.total) || 0,
+        totalSpent: totalSpent?.total ? parseFloat(String(totalSpent.total)) : 0,
         totalReviews,
         lastOrderDate: lastOrder?.createdAt,
       },
@@ -372,38 +397,31 @@ export class UsersService {
 
   async getDashboardStats(userId: string): Promise<{
     totalOrders: number;
-    greenPoints: number;
-    savedDesigns: number;
-    recentOrders: any[];
+    totalSpent: number;
+    loyaltyPoints: number;
     treesPlanted: number;
   }> {
-    const [totalOrders, savedDesigns, recentOrders, pointsBalance] =
-      await Promise.all([
-        this.orderRepository.count({ where: { userId } }),
-        this.savedDesignRepository.count({ where: { userId } }),
-        this.orderRepository.find({
-          where: { userId },
-          order: { createdAt: 'DESC' },
-          take: 5,
-          relations: ['items'],
-        }),
-        this.getGreenPointsBalance(userId),
-      ]);
+    const [totalOrders, orders, pointsBalance] = await Promise.all([
+      this.orderRepository.count({ where: { userId } }),
+      this.orderRepository.find({
+        where: { userId },
+        relations: ['items'],
+      }),
+      this.getGreenPointsBalance(userId),
+    ]);
+
+    // Calculate total spent from all orders
+    const totalSpent = orders.reduce((sum, order) => {
+      return sum + Number(order.Total || 0);
+    }, 0);
 
     // Calculate trees planted (3 trees per order)
     const treesPlanted = totalOrders * 3;
 
     return {
       totalOrders,
-      greenPoints: pointsBalance.available,
-      savedDesigns,
-      recentOrders: recentOrders.map((order) => ({
-        id: order.id,
-        total: order.Total,
-        status: order.Status,
-        createdAt: order.createdAt,
-        itemsCount: order.items?.length || 0,
-      })),
+      totalSpent,
+      loyaltyPoints: pointsBalance.available,
       treesPlanted,
     };
   }
@@ -430,11 +448,16 @@ export class UsersService {
     }));
   }
 
-  async getTreesPlanted(userId: string): Promise<{ trees: number }> {
+  async getTreesPlanted(userId: string): Promise<{
+    count: number;
+    goal: number;
+  }> {
     const totalOrders = await this.orderRepository.count({
       where: { userId },
     });
-    return { trees: totalOrders * 3 };
+    const count = totalOrders * 3; // 3 trees per order
+    const goal = 100; // Target goal per user
+    return { count, goal };
   }
 
   private async getGreenPointsBalance(userId: string): Promise<{
@@ -469,8 +492,11 @@ export class UsersService {
 
   private formatUserResponse(user: User): UserResponseDto {
     // Get default address or first address
-    const defaultAddress = user.addresses?.find(addr => addr.is_default) || user.addresses?.[0];
-    const addressString = defaultAddress ? `${defaultAddress.line1}${defaultAddress.line2 ? ', ' + defaultAddress.line2 : ''}, ${defaultAddress.state} ${defaultAddress.zip}, ${defaultAddress.country}` : undefined;
+    const defaultAddress =
+      user.addresses?.find((addr) => addr.is_default) || user.addresses?.[0];
+    const addressString = defaultAddress
+      ? `${defaultAddress.line1}${defaultAddress.line2 ? ', ' + defaultAddress.line2 : ''}, ${defaultAddress.state} ${defaultAddress.zip}, ${defaultAddress.country}`
+      : undefined;
 
     return {
       id: user.id,
@@ -486,5 +512,3 @@ export class UsersService {
     };
   }
 }
-
-

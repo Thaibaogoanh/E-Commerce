@@ -76,4 +76,3 @@ export class RewardPoint {
   @JoinColumn({ name: 'orderId' })
   order: Order;
 }
-

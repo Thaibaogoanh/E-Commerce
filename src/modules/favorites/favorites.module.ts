@@ -13,4 +13,3 @@ import { Design } from '../../entities/design.entity';
   exports: [FavoritesService],
 })
 export class FavoritesModule {}
-

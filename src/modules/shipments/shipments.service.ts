@@ -35,8 +35,17 @@ export class ShipmentsService {
   }
 
   async getTracking(shipmentId: string): Promise<{
-    shipment: Shipment;
-    events: TrackEvent[];
+    id: string;
+    orderId: string;
+    trackingNumber: string;
+    status: string;
+    estimatedDelivery: string | null;
+    events: Array<{
+      timestamp: string;
+      status: string;
+      location: string;
+      description: string;
+    }>;
   }> {
     const shipment = await this.shipmentRepository.findOne({
       where: { Ship_ID: shipmentId },
@@ -52,12 +61,36 @@ export class ShipmentsService {
       order: { even_time: 'DESC' },
     });
 
-    return { shipment, events };
+    // Format events for frontend
+    const formattedEvents = events.map((event) => ({
+      timestamp: event.even_time?.toISOString() || new Date().toISOString(),
+      status: event.status_text || 'pending',
+      location: event.location || 'Unknown',
+      description: event.status_text || 'Update pending',
+    }));
+
+    return {
+      id: shipment.Ship_ID,
+      orderId: shipment.orderId,
+      trackingNumber: shipment.tracking_number || 'N/A',
+      status: shipment.status || 'processing',
+      estimatedDelivery: shipment.ship_date?.toISOString() || null,
+      events: formattedEvents,
+    };
   }
 
   async getTrackingByOrderId(orderId: string): Promise<{
-    shipment: Shipment;
-    events: TrackEvent[];
+    id: string;
+    orderId: string;
+    trackingNumber: string;
+    status: string;
+    estimatedDelivery: string | null;
+    events: Array<{
+      timestamp: string;
+      status: string;
+      location: string;
+      description: string;
+    }>;
   }> {
     const shipment = await this.findByOrderId(orderId);
 
@@ -70,7 +103,22 @@ export class ShipmentsService {
       order: { even_time: 'DESC' },
     });
 
-    return { shipment, events };
+    // Format events for frontend
+    const formattedEvents = events.map((event) => ({
+      timestamp: event.even_time?.toISOString() || new Date().toISOString(),
+      status: event.status_text || 'pending',
+      location: event.location || 'Unknown',
+      description: event.status_text || 'Update pending',
+    }));
+
+    return {
+      id: shipment.Ship_ID,
+      orderId: shipment.orderId,
+      trackingNumber: shipment.tracking_number || 'N/A',
+      status: shipment.status || 'processing',
+      estimatedDelivery: shipment.ship_date?.toISOString() || null,
+      events: formattedEvents,
+    };
   }
 
   async addTrackingEvent(

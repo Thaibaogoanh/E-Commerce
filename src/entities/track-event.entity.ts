@@ -39,4 +39,3 @@ export class TrackEvent {
   @JoinColumn({ name: 'shipmentId', referencedColumnName: 'Ship_ID' })
   shipment: Shipment;
 }
-

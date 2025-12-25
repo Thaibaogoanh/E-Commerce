@@ -7,7 +7,6 @@ import {
   OneToMany,
   ManyToOne,
   JoinColumn,
-  Index,
 } from 'typeorm';
 import { Product } from './product.entity';
 

@@ -9,7 +9,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import {
@@ -121,8 +126,9 @@ export class AuthController {
     status: 404,
     description: 'User not found',
   })
-  async forgotPassword(@Body() body: { email: string }): Promise<{ message: string }> {
+  async forgotPassword(
+    @Body() body: { email: string },
+  ): Promise<{ message: string }> {
     return this.authService.forgotPassword(body.email);
   }
 }
-

@@ -66,4 +66,3 @@ export class Payment {
   @JoinColumn({ name: 'orderId' })
   order: Order;
 }
-

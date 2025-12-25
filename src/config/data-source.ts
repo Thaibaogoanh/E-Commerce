@@ -38,11 +38,20 @@ if (!dbPassword) {
   process.exit(1);
 }
 
+const dbHost = configService.get<string>('DB_HOST', 'localhost');
+const dbUser = configService.get<string>('DB_USER') || configService.get<string>('DB_USERNAME', 'myuser');
+
+// AWS RDS requires SSL connection
+// Enable SSL if connecting to AWS RDS or in production
+const isAwsRds = dbHost.includes('.rds.amazonaws.com');
+const isProduction = configService.get<string>('NODE_ENV') === 'production';
+const enableSSL = isAwsRds || isProduction;
+
 export const AppDataSource = new DataSource({
   type: 'postgres',
-  host: configService.get<string>('DB_HOST', 'localhost'),
+  host: dbHost,
   port: configService.get<number>('DB_PORT', 5432),
-  username: configService.get<string>('DB_USER', 'myuser'),
+  username: dbUser,
   password: dbPassword,
   database: configService.get<string>('DB_NAME', 'mydatabase'),
   entities: [__dirname + '/../entities/*.entity{.ts,.js}'],
@@ -50,8 +59,5 @@ export const AppDataSource = new DataSource({
   migrationsTableName: 'migrations',
   synchronize: false, // Never use synchronize with migrations
   logging: configService.get<string>('NODE_ENV') === 'development',
-  ssl:
-    configService.get<string>('NODE_ENV') === 'production'
-      ? { rejectUnauthorized: false }
-      : false,
+  ssl: enableSSL ? { rejectUnauthorized: false } : false,
 });

@@ -6,7 +6,6 @@ import { Review } from '../entities/review.entity';
 import { Order, OrderStatus, PaymentStatus } from '../entities/order.entity';
 import { OrderItem } from '../entities/order-item.entity';
 import { Cart } from '../entities/cart.entity';
-import { CartItem } from '../entities/cart-item.entity';
 import { Packaging } from '../entities/packaging.entity';
 import { ReturnReason } from '../entities/return-reason.entity';
 import { Employee, EmployeeRole } from '../entities/employee.entity';
@@ -660,9 +659,11 @@ export async function seedDatabase(dataSource: DataSource) {
       {
         DESIGN_ID: 'a0eebc99-9c0b-4ef8-bb6d-000000000101',
         title: 'Thiên nhiên xanh',
-        description: 'Thiết kế với hình ảnh lá cây xanh tươi, biểu tượng của sự bền vững.',
+        description:
+          'Thiết kế với hình ảnh lá cây xanh tươi, biểu tượng của sự bền vững.',
         design_tag: 'nature',
-        preview_url: 'https://placehold.co/300x300/4CAF50/FFFFFF&text=Nature+Design',
+        preview_url:
+          'https://placehold.co/300x300/4CAF50/FFFFFF&text=Nature+Design',
         license_type: LicenseType.STANDARD,
         status: DesignStatus.APPROVED,
         downloads: 128,
@@ -675,9 +676,11 @@ export async function seedDatabase(dataSource: DataSource) {
       {
         DESIGN_ID: 'a0eebc99-9c0b-4ef8-bb6d-000000000102',
         title: 'Tối giản hiện đại',
-        description: 'Thiết kế tối giản với các hình khối hình học đơn giản, phù hợp với phong cách hiện đại.',
+        description:
+          'Thiết kế tối giản với các hình khối hình học đơn giản, phù hợp với phong cách hiện đại.',
         design_tag: 'minimalist',
-        preview_url: 'https://placehold.co/300x300/E8E8E8/333333&text=Minimalist',
+        preview_url:
+          'https://placehold.co/300x300/E8E8E8/333333&text=Minimalist',
         license_type: LicenseType.STANDARD,
         status: DesignStatus.APPROVED,
         downloads: 156,
@@ -690,9 +693,11 @@ export async function seedDatabase(dataSource: DataSource) {
       {
         DESIGN_ID: 'a0eebc99-9c0b-4ef8-bb6d-000000000103',
         title: 'Retro cổ điển',
-        description: 'Thiết kế theo phong cách retro vintage, mang lại cảm giác hoài niệm.',
+        description:
+          'Thiết kế theo phong cách retro vintage, mang lại cảm giác hoài niệm.',
         design_tag: 'vintage',
-        preview_url: 'https://placehold.co/300x300/DAA520/FFFFFF&text=Vintage+Style',
+        preview_url:
+          'https://placehold.co/300x300/DAA520/FFFFFF&text=Vintage+Style',
         license_type: LicenseType.PREMIUM,
         status: DesignStatus.APPROVED,
         downloads: 89,
@@ -705,9 +710,11 @@ export async function seedDatabase(dataSource: DataSource) {
       {
         DESIGN_ID: 'a0eebc99-9c0b-4ef8-bb6d-000000000104',
         title: 'Trừu tượng sáng tạo',
-        description: 'Thiết kế trừu tượng với các màu sắc nổi bật, thể hiện sự sáng tạo và độc lập.',
+        description:
+          'Thiết kế trừu tượng với các màu sắc nổi bật, thể hiện sự sáng tạo và độc lập.',
         design_tag: 'abstract',
-        preview_url: 'https://placehold.co/300x300/FF6B9D/FFFFFF&text=Abstract+Art',
+        preview_url:
+          'https://placehold.co/300x300/FF6B9D/FFFFFF&text=Abstract+Art',
         license_type: LicenseType.STANDARD,
         status: DesignStatus.APPROVED,
         downloads: 203,
@@ -720,9 +727,11 @@ export async function seedDatabase(dataSource: DataSource) {
       {
         DESIGN_ID: 'a0eebc99-9c0b-4ef8-bb6d-000000000105',
         title: 'Typography độc đáo',
-        description: 'Thiết kế tập trung vào kiểu chữ sáng tạo và thông điệp ý nghĩa.',
+        description:
+          'Thiết kế tập trung vào kiểu chữ sáng tạo và thông điệp ý nghĩa.',
         design_tag: 'typography',
-        preview_url: 'https://placehold.co/300x300/1E90FF/FFFFFF&text=Typography',
+        preview_url:
+          'https://placehold.co/300x300/1E90FF/FFFFFF&text=Typography',
         license_type: LicenseType.STANDARD,
         status: DesignStatus.APPROVED,
         downloads: 145,
@@ -735,9 +744,11 @@ export async function seedDatabase(dataSource: DataSource) {
       {
         DESIGN_ID: 'a0eebc99-9c0b-4ef8-bb6d-000000000106',
         title: 'Hình ảnh chân dung',
-        description: 'Thiết kế với hình ảnh chân dung độc đáo, mang tính nhân văn cao.',
+        description:
+          'Thiết kế với hình ảnh chân dung độc đáo, mang tính nhân văn cao.',
         design_tag: 'illustration',
-        preview_url: 'https://placehold.co/300x300/9370DB/FFFFFF&text=Illustration',
+        preview_url:
+          'https://placehold.co/300x300/9370DB/FFFFFF&text=Illustration',
         license_type: LicenseType.PREMIUM,
         status: DesignStatus.APPROVED,
         downloads: 112,

@@ -33,7 +33,7 @@ export class PaymentService {
     private paymentMethodRepository: Repository<PaymentMethod>,
     private vnpayGateway: VNPayGateway,
     private configService: ConfigService,
-  ) { }
+  ) {}
 
   /**
    * Initialize payment
@@ -54,12 +54,18 @@ export class PaymentService {
       let paymentMethodId = request.paymentMethodId;
 
       // Nếu paymentMethodId không phải UUID, tìm theo tên (e.g., 'vnpay', 'momo')
-      if (!paymentMethodId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      if (
+        !paymentMethodId.match(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+        )
+      ) {
         const paymentMethod = await this.paymentMethodRepository.findOne({
           where: { MethodName: request.paymentMethodId },
         });
         if (!paymentMethod) {
-          throw new BadRequestException(`Payment method '${request.paymentMethodId}' not found`);
+          throw new BadRequestException(
+            `Payment method '${request.paymentMethodId}' not found`,
+          );
         }
         paymentMethodId = paymentMethod.MethodID;
       }
@@ -76,7 +82,10 @@ export class PaymentService {
       const savedPayment = await this.paymentRepository.save(payment);
 
       // Lấy frontend URL từ config
-      const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
+      const frontendUrl = this.configService.get<string>(
+        'FRONTEND_URL',
+        'http://localhost:3000',
+      );
 
       // Tạo description an toàn cho VNPay (chỉ dùng alphanumeric)
       const safeDescription = `Payment for order ${request.orderId.replace(/-/g, '').substring(0, 20)}`;
@@ -117,7 +126,8 @@ export class PaymentService {
           orderId: request.orderId,
           status: 'pending',
           amount: request.amount,
-          message: 'Payment initialized (mock mode). Please configure VNPay credentials.',
+          message:
+            'Payment initialized (mock mode). Please configure VNPay credentials.',
         };
       }
     } catch (error: any) {
@@ -134,7 +144,10 @@ export class PaymentService {
   /**
    * Verify payment callback from payment gateway (Legacy method - for backward compatibility)
    */
-  async verifyPayment(paymentId: string, transactionId: string): Promise<PaymentResponse> {
+  async verifyPayment(
+    paymentId: string,
+    transactionId: string,
+  ): Promise<PaymentResponse> {
     try {
       const payment = await this.paymentRepository.findOne({
         where: { PaymentID: paymentId },
@@ -178,8 +191,12 @@ export class PaymentService {
     callbackParams: any,
   ): Promise<PaymentResponse> {
     try {
-      this.logger.log(`[PaymentService] Processing VNPay callback for payment: ${paymentId}`);
-      this.logger.debug(`[PaymentService] Callback params: ${JSON.stringify(callbackParams)}`);
+      this.logger.log(
+        `[PaymentService] Processing VNPay callback for payment: ${paymentId}`,
+      );
+      this.logger.debug(
+        `[PaymentService] Callback params: ${JSON.stringify(callbackParams)}`,
+      );
 
       const payment = await this.paymentRepository.findOne({
         where: { PaymentID: paymentId },
@@ -200,7 +217,8 @@ export class PaymentService {
       // vì signature được tạo từ tất cả params vnp_* (trừ vnp_SecureHash, vnp_SecureHashType)
       const verifyResult = await this.vnpayGateway.verifyPayment({
         ...callbackParams, // Truyền tất cả params từ VNPay callback
-        transactionId: callbackParams.vnp_TxnRef || payment.txn_ref || paymentId,
+        transactionId:
+          callbackParams.vnp_TxnRef || payment.txn_ref || paymentId,
         amount: vnpAmount, // Giữ lại để compatible với interface
       });
 
@@ -301,5 +319,4 @@ export class PaymentService {
       message: 'Payment cancelled',
     };
   }
-
 }

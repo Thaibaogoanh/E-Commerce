@@ -38,4 +38,3 @@ export class EmployeesService {
     await this.employeeRepository.remove(employee);
   }
 }
-

@@ -77,4 +77,3 @@ export class Review {
     return this.REVIEW_ID;
   }
 }
-

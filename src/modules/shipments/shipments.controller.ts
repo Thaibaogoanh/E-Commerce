@@ -22,12 +22,39 @@ export class ShipmentsController {
   async getTrackingByOrder(
     @Request() req,
     @Param('orderId', ParseUUIDPipe) orderId: string,
-  ) {
+  ): Promise<{
+    id: string;
+    orderId: string;
+    trackingNumber: string;
+    status: string;
+    estimatedDelivery: string | null;
+    events: Array<{
+      timestamp: string;
+      status: string;
+      location: string;
+      description: string;
+    }>;
+  }> {
     return this.shipmentsService.getTrackingByOrderId(orderId);
   }
 
   @Get(':id/tracking')
-  async getTracking(@Request() req, @Param('id', ParseUUIDPipe) id: string) {
+  async getTracking(
+    @Request() req,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<{
+    id: string;
+    orderId: string;
+    trackingNumber: string;
+    status: string;
+    estimatedDelivery: string | null;
+    events: Array<{
+      timestamp: string;
+      status: string;
+      location: string;
+      description: string;
+    }>;
+  }> {
     return this.shipmentsService.getTracking(id);
   }
 

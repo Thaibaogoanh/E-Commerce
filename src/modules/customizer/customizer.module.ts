@@ -9,16 +9,10 @@ import { Design } from '../../entities/design.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      SavedDesign,
-      Product,
-      SkuVariant,
-      Design,
-    ]),
+    TypeOrmModule.forFeature([SavedDesign, Product, SkuVariant, Design]),
   ],
   controllers: [CustomizerController],
   providers: [CustomizerService],
   exports: [CustomizerService],
 })
 export class CustomizerModule {}
-

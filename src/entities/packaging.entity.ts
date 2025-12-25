@@ -32,4 +32,3 @@ export class Packaging {
   @OneToMany(() => Shipment, (shipment) => shipment.packaging)
   shipments: Shipment[];
 }
-

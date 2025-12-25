@@ -9,7 +9,7 @@ import {
   Request,
   ParseUUIDPipe,
 } from '@nestjs/common';
-import { PaymentService, PaymentInitRequest } from './payment.service';
+import { PaymentService } from './payment.service';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 
 @Controller('payments')
@@ -55,18 +55,13 @@ export class PaymentController {
 
   @Get(':paymentId/status')
   @UseGuards(JwtAuthGuard)
-  async getPaymentStatus(
-    @Param('paymentId', ParseUUIDPipe) paymentId: string,
-  ) {
+  async getPaymentStatus(@Param('paymentId', ParseUUIDPipe) paymentId: string) {
     return this.paymentService.getPaymentStatus(paymentId);
   }
 
   @Post(':paymentId/cancel')
   @UseGuards(JwtAuthGuard)
-  async cancelPayment(
-    @Param('paymentId', ParseUUIDPipe) paymentId: string,
-  ) {
+  async cancelPayment(@Param('paymentId', ParseUUIDPipe) paymentId: string) {
     return this.paymentService.cancelPayment(paymentId);
   }
 }
-

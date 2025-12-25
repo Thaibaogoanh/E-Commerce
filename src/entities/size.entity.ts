@@ -5,7 +5,6 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
-  Index,
 } from 'typeorm';
 import { SkuVariant } from './sku-variant.entity';
 
@@ -33,4 +32,3 @@ export class Size {
   @OneToMany(() => SkuVariant, (skuVariant) => skuVariant.size)
   skuVariants: SkuVariant[];
 }
-

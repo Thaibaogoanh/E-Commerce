@@ -59,4 +59,3 @@ export class DesignPlacement {
   @JoinColumn({ name: 'printMethodId', referencedColumnName: 'PM_ID' })
   printMethod: PrintMethod;
 }
-

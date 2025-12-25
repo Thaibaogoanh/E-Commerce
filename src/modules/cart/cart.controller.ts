@@ -76,5 +76,3 @@ export class CartController {
     return this.cartService.applyVoucher(req.user.id, body.voucherCode);
   }
 }
-
-

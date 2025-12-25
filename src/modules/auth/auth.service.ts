@@ -25,7 +25,7 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
-    const { email, password, name, phone, address } = registerDto;
+    const { email, password, name, phone } = registerDto;
 
     // Check if user already exists
     const existingUser = await this.userRepository.findOne({
@@ -38,8 +38,8 @@ export class AuthService {
     // Create new user
     const user = this.userRepository.create({
       email,
-      password,
-      name,
+      password_hash: password, // Explicitly set password_hash (will be hashed by BeforeInsert hook)
+      full_name: name, // Explicitly set full_name instead of using name setter
       phone,
       role: UserRole.USER,
     });
@@ -56,18 +56,22 @@ export class AuthService {
 
     // Get user with addresses relation
     const userWithAddresses = await this.userRepository.findOne({
-      where: { id: savedUser.id },
+      where: { UserID: savedUser.UserID },
       relations: ['addresses'],
     });
 
     // Get default address or first address
-    const defaultAddress = userWithAddresses?.addresses?.find(addr => addr.is_default) || userWithAddresses?.addresses?.[0];
-    const addressString = defaultAddress ? `${defaultAddress.line1}${defaultAddress.line2 ? ', ' + defaultAddress.line2 : ''}, ${defaultAddress.state} ${defaultAddress.zip}, ${defaultAddress.country}` : undefined;
+    const defaultAddress =
+      userWithAddresses?.addresses?.find((addr) => addr.is_default) ||
+      userWithAddresses?.addresses?.[0];
+    const addressString = defaultAddress
+      ? `${defaultAddress.line1}${defaultAddress.line2 ? ', ' + defaultAddress.line2 : ''}, ${defaultAddress.state} ${defaultAddress.zip}, ${defaultAddress.country}`
+      : undefined;
 
     return {
       user: {
-        id: savedUser.id,
-        name: savedUser.name,
+        id: savedUser.UserID,
+        name: savedUser.name || savedUser.full_name,
         email: savedUser.email,
         role: savedUser.role,
         phone: savedUser.phone,
@@ -100,8 +104,11 @@ export class AuthService {
     }
 
     // Get default address or first address
-    const defaultAddress = user.addresses?.find(addr => addr.is_default) || user.addresses?.[0];
-    const addressString = defaultAddress ? `${defaultAddress.line1}${defaultAddress.line2 ? ', ' + defaultAddress.line2 : ''}, ${defaultAddress.state} ${defaultAddress.zip}, ${defaultAddress.country}` : undefined;
+    const defaultAddress =
+      user.addresses?.find((addr) => addr.is_default) || user.addresses?.[0];
+    const addressString = defaultAddress
+      ? `${defaultAddress.line1}${defaultAddress.line2 ? ', ' + defaultAddress.line2 : ''}, ${defaultAddress.state} ${defaultAddress.zip}, ${defaultAddress.country}`
+      : undefined;
 
     // Generate JWT token
     const payload = { email: user.email, sub: user.UserID, role: user.role };
@@ -132,6 +139,7 @@ export class AuthService {
       throw new NotFoundException('User not found');
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password_hash, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
@@ -150,6 +158,7 @@ export class AuthService {
     Object.assign(user, updateProfileDto);
     const updatedUser = await this.userRepository.save(user);
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password_hash, ...userWithoutPassword } = updatedUser;
     return userWithoutPassword;
   }
@@ -201,4 +210,3 @@ export class AuthService {
     };
   }
 }
-

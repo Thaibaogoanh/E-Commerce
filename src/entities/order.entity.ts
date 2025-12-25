@@ -127,4 +127,3 @@ export class Order {
     return this.Order_date;
   }
 }
-

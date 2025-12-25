@@ -46,4 +46,3 @@ export class EmployeesController {
     return this.employeesService.remove(id);
   }
 }
-
